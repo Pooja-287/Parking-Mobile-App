@@ -7,7 +7,7 @@ import {
   Text,
   View,
   TextInput,
-  StyleSheet,
+  // StyleSheet,
   TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -126,10 +126,10 @@ const Index = () => {
 
 export default Index;
 
-const styles = StyleSheet.create({
-  icons: {
-    width: 60,
-    height: 60,
-    borderRadius: 5,
-  },
-});
+// const styles = StyleSheet.create({
+//   icons: {
+//     width: 60,
+//     height: 60,
+//     borderRadius: 5,
+//   },
+// });
