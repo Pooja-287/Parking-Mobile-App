@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import React from "react";
 
-const dashboard = () => {
+const todayReport = () => {
   return (
     <View className="flex-1">
       <Text>dashboard</Text>
@@ -9,4 +9,4 @@ const dashboard = () => {
   );
 };
 
-export default dashboard;
+export default todayReport;
