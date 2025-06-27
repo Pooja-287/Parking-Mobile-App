@@ -1,5 +1,5 @@
 
-import mongoose from 'mongoose';
+import mongoose from "mongoose"
 
 const staffSchema = new mongoose.Schema({
   username: {
@@ -13,8 +13,8 @@ const staffSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['staff'],
-    default: 'staff'
+    enum: ['Staff'],
+    default: 'Staff'
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,5 +24,4 @@ const staffSchema = new mongoose.Schema({
 });
 
 const Staff = mongoose.model('Staff', staffSchema);
-
-export default Staff; // ✅ ES Module default export
+export default Staff;

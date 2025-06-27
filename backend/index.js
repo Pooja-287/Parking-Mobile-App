@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 const ConnectDB = async () => {
   try {
     const connect = await mongoose.connect(process.env.MONGODB_URI);
-    console.log("success");
+    console.log("DB Connected Successfully");
   } catch (error) {
     console.log("Error connecting to database");
     console.log(error);
@@ -34,5 +34,8 @@ const ConnectDB = async () => {
 };
 ConnectDB();
 app.listen(PORT, () => {
-  console.log("running on ", PORT);
+  console.log("Server is Running on Port", PORT);
 });
+
+
+
