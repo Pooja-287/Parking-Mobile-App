@@ -16,7 +16,16 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.gowthamrameshdev.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -35,10 +44,7 @@
         }
       ],
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow Parking app to access your camera"
-        }
+        "expo-camera"
       ]
     ],
     "experiments": {
