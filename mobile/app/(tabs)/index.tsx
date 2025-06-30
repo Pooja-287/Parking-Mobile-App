@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Scan from "../../components/Scan";
+import { Link } from "expo-router";
 
 const Index = () => {
   const [isCheck, setIsCheck] = useState(true);
@@ -25,7 +26,7 @@ const Index = () => {
         translucent
         barStyle="dark-content"
       />
-      <View className="bg-[#F3F4F6] py-4 flex-1 px-4">
+      <View className="bg-green-100 py-4 flex-1 px-4">
         <View className="">
           <View className="border border-white  rounded-sm bg-white p-2">
             <Text className="text-2xl mb-5 text-[#111827]">Hey, Gowtham</Text>
@@ -150,6 +151,9 @@ const Index = () => {
             </View>
           )}
         </View>
+        <Link href={"/login"}>
+          <Text>hello</Text>
+        </Link>
       </View>
     </>
   );
