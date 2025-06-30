@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
+// import useLogin from "@/utils/store";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const screenWidth = Dimensions.get("window").width;
+  // const isLogin = useLogin((state) => state.isLogin);
 
   return (
     <SafeAreaView className="flex-1 bg-green-100 justify-center items-center px-5 font-sans">
@@ -66,7 +68,10 @@ const Login = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity className="bg-[#4CAF50] py-4 rounded-xl">
+        <TouchableOpacity
+          className="bg-[#4CAF50] py-4 rounded-xl"
+          // onPress={isLogin}
+        >
           <Text className="text-center text-xl text-white font-semibold ">
             Login
           </Text>

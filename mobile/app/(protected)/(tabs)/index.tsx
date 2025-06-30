@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../global.css";
+import "../../global.css";
 import { Picker } from "@react-native-picker/picker";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -9,14 +9,17 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import Scan from "../../components/Scan";
-import { Link } from "expo-router";
+import Scan from "../../../components/Scan";
+// import { Link } from "expo-router";
+// import useLogin from "@/utils/store";
 
 const Index = () => {
   const [isCheck, setIsCheck] = useState(true);
   const [Toscan, setToscan] = useState(false);
   const [TId, setTId] = useState("");
   const [selectedValue, setSelectedValue] = useState("");
+  // const isLogOut = useLogin((state) => state.isLogged);
+
   // const [Money, setMoney] = useState("");
 
   return (
@@ -151,9 +154,9 @@ const Index = () => {
             </View>
           )}
         </View>
-        <Link href={"/login"}>
+        <TouchableOpacity>
           <Text>hello</Text>
-        </Link>
+        </TouchableOpacity>
       </View>
     </>
   );
