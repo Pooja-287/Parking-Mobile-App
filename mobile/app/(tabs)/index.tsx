@@ -25,20 +25,20 @@ const Index = () => {
         translucent
         barStyle="dark-content"
       />
-      <View className="bg-[#F3F4F6] flex-1 px-4">
+      <View className="bg-[#F3F4F6] py-4 flex-1 px-4">
         <View className="">
-          <View className="border border-white  rounded-sm bg-[#F9FAFB] p-2">
+          <View className="border border-white  rounded-sm bg-white p-2">
             <Text className="text-2xl mb-5 text-[#111827]">Hey, Gowtham</Text>
 
             <View className="flex-row justify-around ">
               <TouchableOpacity
-                className="bg-green-400 items-center justify-center px-10 py-2 rounded-sm"
+                className="bg-green-400 items-center justify-center px-6 py-2 rounded-sm"
                 onPress={() => setIsCheck(true)}
               >
                 <Text className="text-2xl text-[#111827]">Check In</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="bg-[#EF4444] items-center justify-center px-10 py-2 rounded-sm"
+                className="bg-[#EF4444] items-center justify-center px-6 py-2 rounded-sm"
                 onPress={() => setIsCheck(false)}
               >
                 <Text className="text-2xl text-[#111827]">Check Out</Text>
@@ -53,22 +53,21 @@ const Index = () => {
               <View className="bg-white">
                 <View className="p-2 gap-3">
                   <View className="flex-row justify-between items-center gap-2">
-                    <Text className="text-xl">Vehicle No</Text>
                     <TextInput
                       placeholder="Vehicle No"
-                      className="rounded-sm  h-14 w-72 bg-gray-300"
+                      className="rounded-sm px-1.5  h-14 flex-1 bg-blue-100"
                     />
                   </View>
                   <View className="flex-row items-center justify-between gap-2">
-                    <Text className="text-xl">Vehicle Type</Text>
                     <Picker
                       className="rounded-sm"
                       selectedValue={selectedValue}
                       onValueChange={(itemValue) => setSelectedValue(itemValue)}
                       style={{
                         height: 52,
-                        width: 252,
-                        backgroundColor: "#D1D5DB",
+                        flex: 1,
+                        fontSize: 14,
+                        backgroundColor: "#DBEAFE",
                       }}
                     >
                       <Picker.Item label="Cycle" value="cycle" />
@@ -78,23 +77,22 @@ const Index = () => {
                     </Picker>
                   </View>
                   <View className="flex-row  justify-between items-center gap-2">
-                    <Text className="text-xl">Mobile No</Text>
                     <TextInput
                       placeholder="Mobile"
                       keyboardType="number-pad"
-                      className="rounded-sm bg-gray-300 h-14 w-72"
+                      className="rounded-sm px-1.5 bg-blue-100 h-14 flex-1"
                     />
                   </View>
                   <View className="flex-row items-center justify-between gap-2">
-                    <Text className="text-xl">Payment type</Text>
                     <Picker
                       className="rounded-sm"
                       selectedValue={selectedValue}
                       onValueChange={(itemValue) => setSelectedValue(itemValue)}
                       style={{
                         height: 52,
-                        width: 252,
-                        backgroundColor: "#D1D5DB",
+                        flex: 1,
+                        fontSize: 14,
+                        backgroundColor: "#DBEAFE",
                       }}
                     >
                       <Picker.Item label="Cash" value="cash" />
@@ -116,13 +114,13 @@ const Index = () => {
             </View>
           ) : (
             <View className="gap-5">
-              <Text className="text-2xl">CheckOut</Text>
+              <Text className="text-2xl">Check Out</Text>
               <View className=" flex-row rounded-sm justify-center items-center">
                 <TextInput
                   placeholder="Vehicle No"
                   value={TId}
                   onChangeText={(text) => setTId(text)}
-                  className="rounded-sm px-2 h-14 flex-1 bg-white"
+                  className="rounded-sm px-2 h-14 flex-1 bg-[#DBEAFE]"
                 />
 
                 <Ionicons
