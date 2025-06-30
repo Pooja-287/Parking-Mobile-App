@@ -21,10 +21,55 @@ const verifyStaff = async (req, res, next) => {
   }
 };
 
+// const verifyToken = async (req, res, next) => {
+//   const authHeader = req.headers.authorization;
+
+//   // 1. Check for token
+//   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+//     return res.status(401).json({ message: 'No token provided' });
+//   }
+
+//   const token = authHeader.split(' ')[1];
+
+//   try {
+//     // 2. Verify the token
+//     const decoded = jwt.verify(token, SECRET_KEY);
+//     console.log("Decoded token:", decoded);
+
+//     // ✅ FIX: Use decoded._id (not decoded.id) based on your token structure
+//     const userId = decoded._id || decoded.id;
+
+//     // 3. Try to find the user in Admin collection
+//     let user = await Admin.findById(userId);
+
+//     // 4. If not found in Admin, check Staff collection
+//     if (!user) {
+//       console.log("Checking in staff...");
+//       user = await Staff.findById(userId);
+
+//       if (!user) {
+//         console.log("User not found in both Admin and Staff collections");
+//         return res.status(404).json({ message: "User not found" });
+//       }
+//     }
+
+//     // 5. User found ✅
+//     console.log("User found:", user.username, user.role);
+//     req.user = user;
+//     next();
+
+//   } catch (err) {
+//     console.error("Token verify error:", err);
+//     return res.status(403).json({ message: "Invalid or expired token", error: err.message });
+//   }
+// };
+
+
+
+// General JWT Verification Middleware (for Admin & Staff)
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  // 1. Check for token
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No token provided' });
   }
@@ -32,35 +77,31 @@ const verifyToken = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // 2. Verify the token
+    // Verify the token
     const decoded = jwt.verify(token, SECRET_KEY);
-    console.log("Decoded token:", decoded);
-
-    // ✅ FIX: Use decoded._id (not decoded.id) based on your token structure
     const userId = decoded._id || decoded.id;
 
-    // 3. Try to find the user in Admin collection
-    let user = await Admin.findById(userId);
-
-    // 4. If not found in Admin, check Staff collection
-    if (!user) {
-      console.log("Checking in staff...");
-      user = await Staff.findById(userId);
-
-      if (!user) {
-        console.log("User not found in both Admin and Staff collections");
-        return res.status(404).json({ message: "User not found" });
-      }
+    let user = await Admin.findById(userId); // Try Admin
+    if (user) {
+      req.user = {
+        _id: user._id,
+        role: user.role || 'admin',
+      };
+      return next();
     }
 
-    // 5. User found ✅
-    console.log("User found:", user.username, user.role);
-    req.user = user;
-    next();
+    user = await Staff.findById(userId); // Try Staff
+    if (user) {
+      req.user = {
+        _id: user._id,
+        role: user.role || 'staff',
+      };
+      return next();
+    }
 
+    return res.status(404).json({ message: 'User not found' });
   } catch (err) {
-    console.error("Token verify error:", err);
-    return res.status(403).json({ message: "Invalid or expired token", error: err.message });
+    return res.status(403).json({ message: 'Invalid or expired token', error: err.message });
   }
 };
 
