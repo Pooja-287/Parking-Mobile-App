@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 import Staff from '../model/staff.js';
 import Admin from '../model/admin.js';
-
+import mongoose from 'mongoose';
 
 // Optional helper for IST string conversion
 const convertToISTString = (date) => {
@@ -17,7 +17,6 @@ const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 const Checkin = async (req, res) => {
   try {
     const { name, vehicleType, numberPlate, mobileNumber } = req.body;
-
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -42,47 +41,68 @@ const Checkin = async (req, res) => {
       });
     }
 
-    // const priceData = await Price.findOne({ vehicleType, priceType: 'perHour' }) ||
-    //                   await Price.findOne({ vehicleType });
-
-
-    const priceData = await Price.findOne({
-  vehicleType,
-  adminId: userId, // Ensures price belongs to this logged-in admin
-  priceType: 'perHour'
-}) || await Price.findOne({
-  vehicleType,
-  adminId: userId
-});
-
-if (!priceData) {
-  return res.status(404).json({
-    message: `No pricing set for vehicle type: ${vehicleType}. Please ask your admin to set the price.`
-  });
+    // Get adminId (handle if user is staff)
+    let adminIdForPrice = userId;
+    if (userRole === 'staff') {
+      const staffData = await Staff.findById(userId);
+  if (!staffData || !staffData.createdBy) {
+  return res.status(403).json({ message: "Staff not linked to any admin" });
 }
+adminIdForPrice = staffData.createdBy;
+
+    }
+
+    // Fetch price data set by admin
+    const priceData = await Price.findOne({
+      vehicleType,
+      adminId: adminIdForPrice,
+      priceType: 'perHour'
+    }) || await Price.findOne({
+      vehicleType,
+      adminId: adminIdForPrice
+    });
 
     if (!priceData) {
-      return res.status(404).json({ message: `No pricing set for vehicle type: ${vehicleType}` });
+      return res.status(404).json({
+        message: `No pricing set for vehicle type: ${vehicleType}. Please ask your admin to set the price.`
+      });
     }
 
     const tokenId = uuidv4();
     const qrCode = await QRCode.toDataURL(tokenId);
     const isPerHour = priceData.priceType === 'perHour';
 
+    // const newCheckin = new VehicleCheckin({
+    //   name,
+    //   vehicleType,
+    //   vehicleNumber: cleanedPlate,
+    //   mobileNumber,
+    //   tokenId,
+    //   qrCode,
+    //   entryDateTime: new Date(),
+    //   createdBy: userId,
+    //   createdByRole: capitalize(userRole),
+    //   priceType: priceData.priceType,
+    //   pricePerHour: isPerHour ? priceData.price : undefined,
+    //   pricePerDay: !isPerHour ? priceData.price : undefined
+    // });
+
+
     const newCheckin = new VehicleCheckin({
-      name,
-      vehicleType,
-      vehicleNumber: cleanedPlate,
-      mobileNumber,
-      tokenId,
-      qrCode,
-      entryDateTime: new Date(),
-      createdBy: userId,
-      createdByRole: capitalize(userRole),
-      priceType: priceData.priceType,
-      pricePerHour: isPerHour ? priceData.price : undefined,
-      pricePerDay: !isPerHour ? priceData.price : undefined
-    });
+  name,
+  vehicleType,
+  vehicleNumber: cleanedPlate,
+  mobileNumber,
+  tokenId,
+  qrCode,
+  entryDateTime: new Date(),
+  createdBy: userId,
+  createdByRole: capitalize(userRole),
+  adminRefId: adminIdForPrice, // ✅ store the actual adminId here
+  priceType: priceData.priceType,
+  pricePerHour: isPerHour ? priceData.price : undefined,
+  pricePerDay: !isPerHour ? priceData.price : undefined
+});
 
     await newCheckin.save();
 
@@ -110,6 +130,9 @@ if (!priceData) {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
+
+
 
 // Format time only (HH:MM:SS AM/PM)
 const formatTimeOnly = (date) => {
@@ -243,23 +266,6 @@ const getCheckouts = async (req, res) => {
 };
 
 
-// const getVehicleByNumberPlate = async (req, res) => {
-//   try {
-//     const numberPlate = req.params.numberPlate.toUpperCase().replace(/\s/g, '');
-
-//     const vehicles = await VehicleCheckin.find({ vehicleNumber: numberPlate });
-
-//     if (!vehicles.length) {
-//       return res.status(404).json({ message: `No vehicle found with number plate: ${numberPlate}` });
-//     }
-
-//     res.status(200).json({ count: vehicles.length, vehicles });
-//   } catch (error) {
-//     console.error("getVehicleByNumberPlate error:", error);
-//     res.status(500).json({ message: "Internal Server Error", error: error.message });
-//   }
-// };
-
 
 const getVehicleList = async (req, res) => {
   try {
@@ -292,8 +298,19 @@ const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
+    const userRole = req.user.role;
 
-    const vehicle = await VehicleCheckin.findOne({ _id: id, createdBy: userId });
+    let query = { _id: id };
+
+    if (userRole === 'admin') {
+      query.adminRefId = userId;
+    } else if (userRole === 'staff') {
+      query.createdBy = userId;
+    } else {
+      return res.status(403).json({ message: "Invalid user role" });
+    }
+
+    const vehicle = await VehicleCheckin.findOne(query);
 
     if (!vehicle) {
       return res.status(404).json({ message: "No vehicle found for your account with this ID" });
@@ -307,12 +324,61 @@ const getVehicleById = async (req, res) => {
   }
 };
 
+const getVehicleByPlate = async (req, res) => {
+  try {
+    const numberPlate = req.params.numberPlate.toUpperCase().replace(/\s/g, '');
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    let query = { vehicleNumber: numberPlate };
+
+    if (userRole === 'admin') {
+      query.adminRefId = userId;
+    } else if (userRole === 'staff') {
+      query.createdBy = userId;
+    } else {
+      return res.status(403).json({ message: "Invalid user role" });
+    }
+
+    const vehicles = await VehicleCheckin.find(query);
+
+    if (!vehicles.length) {
+      return res.status(404).json({ message: "No vehicle found with this number plate for your account" });
+    }
+
+    res.status(200).json({ count: vehicles.length, vehicles });
+
+  } catch (error) {
+    console.error("getVehicleByPlate error:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+
+
+
+
+
+
 const getVehicleByToken = async (req, res) => {
   try {
     const { tokenId } = req.params;
-    const userId = req.user._id;
+    const userId = new mongoose.Types.ObjectId(req.user._id); // ✅ Ensure it's ObjectId
+    const userRole = req.user.role;
 
-    const vehicle = await VehicleCheckin.findOne({ tokenId, createdBy: userId });
+    let query = { tokenId };
+
+    if (userRole === 'admin') {
+      query.adminRefId = userId;
+    } else if (userRole === 'staff') {
+      query.createdBy = userId;
+    } else {
+      return res.status(403).json({ message: "Invalid user role" });
+    }
+
+    console.log("Query to MongoDB =>", query); // 👈 DEBUG line
+
+    const vehicle = await VehicleCheckin.findOne(query);
 
     if (!vehicle) {
       return res.status(404).json({ message: "No vehicle found with this tokenId for your account" });
@@ -325,6 +391,10 @@ const getVehicleByToken = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
+
+
+
 const getVehicleByNumberPlate = async (req, res) => {
   try {
     const numberPlate = req.params.numberPlate.toUpperCase().replace(/\s/g, '');
@@ -455,6 +525,7 @@ export default{
     getVehicleById,
     getVehicleByToken,
     getVehicleByNumberPlate,
-    getRevenueReport
+    getRevenueReport,
+    getVehicleByPlate
 
 };

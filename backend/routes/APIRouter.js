@@ -3,7 +3,8 @@ import vehicleController from '../controller/vehicleController.js';
 import userController from '../controller/userController.js';
 import { verifyToken, verifyStaff } from '../middleware/verifyToken.js';
 import staffController from '../controller/staffController.js';
-
+import passController from '../controller/passController.js';
+import upload from '../middleware/upload.js'
 
 const router = express.Router();
 
@@ -17,8 +18,10 @@ router.get('/api/checkouts', verifyToken, vehicleController.getCheckouts);
 router.get('/api/vehicle/:id', verifyToken, vehicleController.getVehicleByNumberPlate);
 router.get('/api/vehiclelist', verifyToken, vehicleController.getVehicleList);
 router.get('/api/getVehicleById/:id', verifyToken, vehicleController.getVehicleById);
-router.get('/api/getVehicleByToken/:id', verifyToken, vehicleController.getVehicleByToken);
+router.get('/api/getVehicleByToken/:tokenId', verifyToken, vehicleController.getVehicleByToken);
+router.get('/api/getVehicleByPlate/:numberPlate', verifyToken, vehicleController.getVehicleByPlate);
 router.get('/api/getRevenueReport', verifyToken, vehicleController.getRevenueReport);
+
 
 // Admin-only
 router.post('/api/create/:id', verifyToken, staffController.createStaff);
@@ -32,8 +35,8 @@ router.get('/api/today-revenue', verifyStaff, staffController.getStaffTodayReven
 router.post('/api/staff/login', staffController.staffLogin);
 
 // Admin management
-router.post('/api/register', userController.registerAdmin);
-router.post('/api/loginAdmin', verifyToken, userController.loginAdmin);
+router.post('/api/register', upload.single('profileImage'),userController.registerAdmin);
+router.post('/api/loginAdmin', upload.single('profileImage'),verifyToken, userController.loginAdmin);
 router.get('/api/getAllAdmins', verifyToken, userController.getAllAdmins);
 router.get('/api/getAdminById/:id', verifyToken, userController.getAdminById);
 router.put('/api/updateAdmin/:id', verifyToken, userController.updateAdmin);
@@ -41,6 +44,7 @@ router.delete('/api/deleteAdmin/delete/:id', verifyToken, userController.deleteA
 router.post('/api/addPrice/:adminId/price', verifyToken, userController.addPrice);
 router.put('/api/updatePrice/:adminId/price/:priceId', verifyToken, userController.updatePrice);
 
-
+router.post('/api/createMonthlyPass', verifyToken, passController.createMonthlyPass);
+router.post('/api/renewMonthlyPass/:id', verifyToken, passController.renewMonthlyPass)
 
 export default router;

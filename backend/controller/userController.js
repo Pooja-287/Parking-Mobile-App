@@ -71,35 +71,88 @@ const updatePrice = async (req, res) => {
 
 
 // 🔐 Register New Admin
+// const registerAdmin = async (req, res) => {
+//   try {
+//     const { username, email, password } = req.body;
+
+//     // Validate required fields
+//     if (!username || !email || !password) {
+//       return res.status(400).json({ message: 'All fields are required' });
+//     }
+
+//     // Check if admin already exists
+//     const existingAdmin = await Admin.findOne({ $or: [{ username }, { email }] });
+//     if (existingAdmin) {
+//       return res.status(400).json({ message: 'Username or email already exists' });
+//     }
+
+//     // Hash the password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Create new admin
+//     const newAdmin = new Admin({ username, email, password: hashedPassword });
+//     await newAdmin.save();
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { id: newAdmin._id, username: newAdmin.username, role: newAdmin.role },
+//       SECRET_KEY,
+//       { expiresIn: '1d' }
+//     );
+
+//     res.status(201).json({
+//       message: 'Admin registered successfully',
+//       token,
+//       admin: {
+//         id: newAdmin._id,
+//         username: newAdmin.username,
+//         email: newAdmin.email,
+//         role: newAdmin.role
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// };
+
+
 const registerAdmin = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    const profileImage = req.file ? req.file.path : null; // Optional image
 
-    // Validate required fields
+    // Check required fields
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check if admin already exists
+    // Check for existing admin
     const existingAdmin = await Admin.findOne({ $or: [{ username }, { email }] });
     if (existingAdmin) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
 
-    // Hash the password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new admin
-    const newAdmin = new Admin({ username, email, password: hashedPassword });
+    // Create new admin with optional image
+    const newAdmin = new Admin({
+      username,
+      email,
+      password: hashedPassword,
+      profileImage // Will be null if not provided
+    });
+
     await newAdmin.save();
 
-    // Generate JWT token
+    // JWT token
     const token = jwt.sign(
       { id: newAdmin._id, username: newAdmin.username, role: newAdmin.role },
       SECRET_KEY,
       { expiresIn: '1d' }
     );
 
+    // Response
     res.status(201).json({
       message: 'Admin registered successfully',
       token,
@@ -107,7 +160,8 @@ const registerAdmin = async (req, res) => {
         id: newAdmin._id,
         username: newAdmin.username,
         email: newAdmin.email,
-        role: newAdmin.role
+        role: newAdmin.role,
+        profileImage: newAdmin.profileImage // could be null
       }
     });
   } catch (error) {
@@ -115,7 +169,46 @@ const registerAdmin = async (req, res) => {
   }
 };
 
+
 // 🔐 Login Admin
+// const loginAdmin = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+
+//     // Check if admin exists
+//     const admin = await Admin.findOne({ username });
+//     if (!admin) {
+//       return res.status(400).json({ message: 'Invalid username or password' });
+//     }
+
+//     // Compare password
+//     const isPasswordValid = await bcrypt.compare(password, admin.password);
+//     if (!isPasswordValid) {
+//       return res.status(400).json({ message: 'Invalid username or password' });
+//     }
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { id: admin._id, username: admin.username, role: admin.role },
+//       SECRET_KEY,
+//       { expiresIn: '1d' }
+//     );
+
+//     res.status(200).json({
+//       message: 'Login successful',
+//       token,
+//       admin: {
+//         id: admin._id,
+//         username: admin.username,
+//         email: admin.email,
+//         role: admin.role
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// };
+
 const loginAdmin = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -139,6 +232,7 @@ const loginAdmin = async (req, res) => {
       { expiresIn: '1d' }
     );
 
+    // Success response with profileImage (optional)
     res.status(200).json({
       message: 'Login successful',
       token,
@@ -146,13 +240,15 @@ const loginAdmin = async (req, res) => {
         id: admin._id,
         username: admin.username,
         email: admin.email,
-        role: admin.role
+        role: admin.role,
+        profileImage: admin.profileImage || null // return null if not uploaded
       }
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 // exports.loginAdmin = async (req, res) => {
 //   try {
