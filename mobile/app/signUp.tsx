@@ -10,11 +10,12 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link } from "expo-router";
-// import userAuthStore from "../utils/store";
+import { Link, Redirect } from "expo-router";
+import userAuthStore from "../utils/store";
 
 const Signup = () => {
   const [userName, setUserName] = useState("");
@@ -23,7 +24,16 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // const { signup } = userAuthStore();
+  const { signup } = userAuthStore();
+
+  const handleSignup = async () => {
+    const result = await signup(userName, email, password);
+    if (!result.success) {
+      Alert.alert("Error", result.error);
+    } else {
+      return <Redirect href={"/login"} />;
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-green-100">
@@ -136,7 +146,7 @@ const Signup = () => {
               {/* Signup Button */}
               <TouchableOpacity
                 className="bg-[#4CAF50] py-4 rounded-xl"
-                // onPress={handleSignup}
+                onPress={handleSignup}
               >
                 <Text className="text-center text-xl text-white font-semibold">
                   Signup
