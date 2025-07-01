@@ -52,19 +52,10 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-svg": "^7.2.1",
-<<<<<<< HEAD
-    "react-native-svg-charts": "^5.4.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "twrnc": "^4.9.1"
-=======
-    "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5",
-    "zustand": "^5.0.6",
-    "@react-native-async-storage/async-storage": "2.1.2"
->>>>>>> 5a93a1870bf1caf3509accd46dcad57a6fbe9a32
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
