@@ -1,6 +1,7 @@
 // import Admin from '../model/admin'
 import Admin from '../model/admin.js';
 import Price from '../model/price.js';
+import Staff from '../model/staff.js'
 
 import bcrypt from 'bcryptjs';
 // import Price from '../model/price'
@@ -209,46 +210,102 @@ const registerAdmin = async (req, res) => {
 //   }
 // };
 
-const loginAdmin = async (req, res) => {
+// const loginAdmin = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+
+//     // Check if admin exists
+//     const admin = await Admin.findOne({ username });
+//     if (!admin) {
+//       return res.status(400).json({ message: 'Invalid username or password' });
+//     }
+
+//     // Compare password
+//     const isPasswordValid = await bcrypt.compare(password, admin.password);
+//     if (!isPasswordValid) {
+//       return res.status(400).json({ message: 'Invalid username or password' });
+//     }
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { id: admin._id, username: admin.username, role: admin.role },
+//       SECRET_KEY,
+//       { expiresIn: '1d' }
+//     );
+
+//     // Success response with profileImage (optional)
+//     res.status(200).json({
+//       message: 'Login successful',
+//       token,
+//       admin: {
+//         id: admin._id,
+//         username: admin.username,
+//         email: admin.email,
+//         role: admin.role,
+//         profileImage: admin.profileImage || null // return null if not uploaded
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// };
+
+
+
+ const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Check if admin exists
-    const admin = await Admin.findOne({ username });
-    if (!admin) {
-      return res.status(400).json({ message: 'Invalid username or password' });
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required" });
     }
 
-    // Compare password
-    const isPasswordValid = await bcrypt.compare(password, admin.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Invalid username or password' });
+    let user, role;
+
+    // First, try to find as Admin
+    user = await Admin.findOne({ username });
+    if (user) {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid username or password' });
+      }
+      role = 'admin';
+    } else {
+      // Try as Staff
+      user = await Staff.findOne({ username });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid username or password' });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid username or password' });
+      }
+      role = 'Staff';
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: admin._id, username: admin.username, role: admin.role },
+      { id: user._id, username: user.username, role },
       SECRET_KEY,
       { expiresIn: '1d' }
     );
 
-    // Success response with profileImage (optional)
-    res.status(200).json({
-      message: 'Login successful',
+    return res.status(200).json({
+      message: "Login successful",
       token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-        profileImage: admin.profileImage || null // return null if not uploaded
+      user: {
+        id: user._id,
+        username: user.username,
+        role,
+        email: user.email || null,
+        profileImage: user.profileImage || null
       }
     });
+
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 
 // exports.loginAdmin = async (req, res) => {
 //   try {
@@ -356,7 +413,7 @@ export default {
   addPrice,
   updatePrice,
   registerAdmin,
-  loginAdmin,
+  loginUser,
   getAllAdmins,
   getAdminById,
   updateAdmin,

@@ -32,11 +32,11 @@ router.delete('/api/delete/:staffId', verifyToken, staffController.deleteStaff);
 // Staff-only
 router.get('/api/today-checkins', verifyStaff, staffController.getStaffTodayVehicles);
 router.get('/api/today-revenue', verifyStaff, staffController.getStaffTodayRevenue);
-router.post('/api/staff/login', staffController.staffLogin);
+// router.post('/api/staff/login', staffController.staffLogin);
 
 // Admin management
 router.post('/api/register', upload.single('profileImage'),userController.registerAdmin);
-router.post('/api/loginAdmin', upload.single('profileImage'),verifyToken, userController.loginAdmin);
+router.post('/api/loginUser', upload.single('profileImage'),verifyToken, userController.loginUser);
 router.get('/api/getAllAdmins', verifyToken, userController.getAllAdmins);
 router.get('/api/getAdminById/:id', verifyToken, userController.getAdminById);
 router.put('/api/updateAdmin/:id', verifyToken, userController.updateAdmin);
