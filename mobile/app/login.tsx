@@ -95,12 +95,17 @@ import {
 } from "react-native";
 import axios from "axios";
 import Ionicons from "@expo/vector-icons/Ionicons";
+<<<<<<< HEAD
 import tw from "twrnc";
 import { SERVER_URL } from "@env";
 
 
 
 const screenWidth = Dimensions.get("window").width;
+=======
+import { SafeAreaView } from "react-native-safe-area-context";
+// import useLogin from "@/utils/store";
+>>>>>>> 5a93a1870bf1caf3509accd46dcad57a6fbe9a32
 
 const Login = () => {
   const [mode, setMode] = useState("login");
@@ -109,6 +114,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+<<<<<<< HEAD
   const handleSubmit = async () => {
     try {
       if (mode === "login") {
@@ -176,6 +182,10 @@ const Login = () => {
 
     }
   };
+=======
+  const screenWidth = Dimensions.get("window").width;
+  // const isLogin = useLogin((state) => state.isLogin);
+>>>>>>> 5a93a1870bf1caf3509accd46dcad57a6fbe9a32
 
   return (
     <SafeAreaView style={tw`flex-1 bg-green-100`}>
@@ -274,7 +284,20 @@ const Login = () => {
             </Text>
           </TouchableOpacity>
         </View>
+<<<<<<< HEAD
       </ScrollView>
+=======
+
+        <TouchableOpacity
+          className="bg-[#4CAF50] py-4 rounded-xl"
+          // onPress={isLogin}
+        >
+          <Text className="text-center text-xl text-white font-semibold ">
+            Login
+          </Text>
+        </TouchableOpacity>
+      </View>
+>>>>>>> 5a93a1870bf1caf3509accd46dcad57a6fbe9a32
     </SafeAreaView>
   );
 };
