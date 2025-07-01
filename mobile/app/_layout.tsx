@@ -10,6 +10,7 @@ export default function RootLayout() {
       </Stack.Protected>
       <Stack.Protected guard={!isLogged}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signUp" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
   );

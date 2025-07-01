@@ -1,35 +1,29 @@
 import React, { useState } from "react";
 import {
-  Text,
   View,
   TextInput,
   TouchableOpacity,
-  Dimensions,
-  Image,
+  Text,
+  // Dimensions,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
-  Alert,
+  Platform,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import userAuthStore from "../utils/store";
 import { Link } from "expo-router";
+// import userAuthStore from "../utils/store";
 
-const Login = () => {
+const Signup = () => {
   const [userName, setUserName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = userAuthStore();
 
-  const screenWidth = Dimensions.get("window").width;
-
-  const handleLogin = async () => {
-    const result = await login(userName, password);
-    if (!result.success) Alert.alert("Error", result.error);
-  };
+  // const { signup } = userAuthStore();
 
   return (
     <SafeAreaView className="flex-1 bg-green-100">
@@ -48,22 +42,16 @@ const Login = () => {
             }}
             keyboardShouldPersistTaps="handled"
           >
-            <Image
-              source={require("../assets/login.png")}
-              style={{
-                width: screenWidth * 0.85,
-                height: screenWidth * 0.9,
-              }}
-              resizeMode="cover"
-            />
-            <View className=" items-center gap-1 ">
+            <View className="mb-5 items-center gap-1 ">
               <Text className="text-4xl mb-3">Parkingz</Text>
+              <Text className="text-2xl">Let&apos;s get Started.</Text>
             </View>
-            <View className="w-full bg-white p-4 pt-5 rounded-2xl gap-8 shadow-md mt-5">
-              <View className="flex-1 items-center justify-center">
-                <Text className="text-2xl">Login</Text>
+            <View className="w-full bg-white p-4 pt-5 rounded-2xl gap-8 shadow-md">
+              <View className="items-center justify-center">
+                <Text className="text-2xl">SignUp</Text>
               </View>
 
+              {/* Username */}
               <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
                 <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans">
                   Username
@@ -77,6 +65,23 @@ const Login = () => {
                 />
               </View>
 
+              {/* Email */}
+              <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
+                <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans">
+                  Email
+                </Text>
+                <Ionicons name="mail-outline" size={20} color="#6B7280" />
+                <TextInput
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="flex-1 py-4 px-2 text-lg text-gray-800"
+                />
+              </View>
+
+              {/* Password */}
               <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
                 <Text className="absolute transform -translate-y-8 text-lg bg-white translate-x-3">
                   Password
@@ -104,18 +109,37 @@ const Login = () => {
                 </TouchableOpacity>
               </View>
 
+              {/* Confirm Password */}
+              <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
+                <Text className="absolute transform -translate-y-8 text-lg bg-white translate-x-3">
+                  Confirm Password
+                </Text>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#6B7280"
+                />
+                <TextInput
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showPassword}
+                  className="flex-1 py-4 px-2 text-lg text-gray-800"
+                />
+              </View>
               <View className="items-center justify-center">
                 <Text className="underline">
-                  <Link href={"/signUp"}>Don’t have an Account? signup</Link>
+                  <Link href={"/login"}>Already have an Account? Login</Link>
                 </Text>
               </View>
 
+              {/* Signup Button */}
               <TouchableOpacity
                 className="bg-[#4CAF50] py-4 rounded-xl"
-                onPress={handleLogin}
+                // onPress={handleSignup}
               >
                 <Text className="text-center text-xl text-white font-semibold">
-                  Login
+                  Signup
                 </Text>
               </TouchableOpacity>
             </View>
@@ -126,4 +150,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

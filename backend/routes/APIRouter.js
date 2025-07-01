@@ -70,6 +70,7 @@ router.post(
 router.post(
   "/api/loginAdmin",
   upload.single("profileImage"),
+  verifyToken,
   userController.loginAdmin
 );
 router.get("/api/getAllAdmins", verifyToken, userController.getAllAdmins);
