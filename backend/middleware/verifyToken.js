@@ -1,30 +1,34 @@
-import jwt from 'jsonwebtoken';
-import Staff from '../model/staff.js';
-import Admin from '../model/admin.js';
+// import jwt from 'jsonwebtoken';
+// import Staff from '../model/staff.js';
+// import Admin from '../model/admin.js';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
+// const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 
-// Middleware for Staff
-const verifyStaff = async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+// // Middleware for Staff
+// const verifyStaff = async (req, res, next) => {
+//   const token = req.headers.authorization?.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'No token provided' });
 
-  try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    const staff = await Staff.findById(decoded.id);
-    if (!staff) return res.status(403).json({ message: 'Unauthorized Staff' });
+//   try {
+//     const decoded = jwt.verify(token, SECRET_KEY);
+//     const staff = await Staff.findById(decoded.id);
+//     if (!staff) return res.status(403).json({ message: 'Unauthorized Staff' });
 
-    req.user = { _id: staff._id, role: staff.role }; // ✅ Attach to req.user
-    next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Invalid or expired token' }); 
-  }
-};
+//     req.user = { _id: staff._id, role: staff.role }; // ✅ Attach to req.user
+//     next();
+//   } catch (err) {
+//     return res.status(403).json({ message: 'Invalid or expired token' }); 
+//   }
+// };
 
+
+
+
+
+// // General JWT Verification Middleware (for Admin & Staff)
 // const verifyToken = async (req, res, next) => {
 //   const authHeader = req.headers.authorization;
 
-//   // 1. Check for token
 //   if (!authHeader || !authHeader.startsWith('Bearer ')) {
 //     return res.status(401).json({ message: 'No token provided' });
 //   }
@@ -32,81 +36,139 @@ const verifyStaff = async (req, res, next) => {
 //   const token = authHeader.split(' ')[1];
 
 //   try {
-//     // 2. Verify the token
+//     // Verify the token
 //     const decoded = jwt.verify(token, SECRET_KEY);
-//     console.log("Decoded token:", decoded);
-
-//     // ✅ FIX: Use decoded._id (not decoded.id) based on your token structure
 //     const userId = decoded._id || decoded.id;
 
-//     // 3. Try to find the user in Admin collection
-//     let user = await Admin.findById(userId);
-
-//     // 4. If not found in Admin, check Staff collection
-//     if (!user) {
-//       console.log("Checking in staff...");
-//       user = await Staff.findById(userId);
-
-//       if (!user) {
-//         console.log("User not found in both Admin and Staff collections");
-//         return res.status(404).json({ message: "User not found" });
-//       }
+//     let user = await Admin.findById(userId); // Try Admin
+//     if (user) {
+//       req.user = {
+//         _id: user._id,
+//         role: user.role || 'admin',
+//       };
+//       return next();
 //     }
 
-//     // 5. User found ✅
-//     console.log("User found:", user.username, user.role);
-//     req.user = user;
-//     next();
+//     user = await Staff.findById(userId); // Try Staff
+//     if (user) {
+//       req.user = {
+//         _id: user._id,
+//         role: user.role || 'staff',
+//       };
+//       return next();
+//     }
 
+//     return res.status(404).json({ message: 'User not found' });
 //   } catch (err) {
-//     console.error("Token verify error:", err);
-//     return res.status(403).json({ message: "Invalid or expired token", error: err.message });
+//     return res.status(403).json({ message: 'Invalid or expired token', error: err.message });
 //   }
 // };
 
 
+// export {
+//   verifyStaff,
+//   verifyToken
+// }
 
-// General JWT Verification Middleware (for Admin & Staff)
+
+
+
+
+
+
+
+
+import jwt from 'jsonwebtoken';
+import Staff from '../model/staff.js';
+import Admin from '../model/admin.js';
+
+const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
+
+/**
+ * Middleware: Verify JWT token for both Admin and Staff
+ */
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
+    return res.status(401).json({ message: 'Authorization token required' });
   }
 
   const token = authHeader.split(' ')[1];
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, SECRET_KEY);
     const userId = decoded._id || decoded.id;
 
-    let user = await Admin.findById(userId); // Try Admin
+    let user = await Admin.findById(userId);
     if (user) {
       req.user = {
         _id: user._id,
         role: user.role || 'admin',
+        username: user.username,
       };
       return next();
     }
 
-    user = await Staff.findById(userId); // Try Staff
+    user = await Staff.findById(userId);
     if (user) {
       req.user = {
         _id: user._id,
         role: user.role || 'staff',
+        username: user.username,
       };
       return next();
     }
 
     return res.status(404).json({ message: 'User not found' });
-  } catch (err) {
-    return res.status(403).json({ message: 'Invalid or expired token', error: err.message });
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid or expired token', error: error.message });
   }
 };
 
+/**
+ * Middleware: Only allow Admin users
+ */
+const isAdmin = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+  next();
+};
+
+/**
+ * Middleware: Only allow Staff users
+ */
+const verifyStaff = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization token required' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    const staff = await Staff.findById(decoded._id || decoded.id);
+    if (!staff) {
+      return res.status(403).json({ message: 'Unauthorized Staff' });
+    }
+
+    req.user = {
+      _id: staff._id,
+      role: staff.role || 'staff',
+      username: staff.username,
+    };
+
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid or expired token', error: error.message });
+  }
+};
 
 export {
+  verifyToken,
   verifyStaff,
-  verifyToken
-}
+  isAdmin
+};
