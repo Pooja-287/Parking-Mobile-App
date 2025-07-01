@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Scan from "../../components/Scan";
+import { Link } from "expo-router";
 
 const Index = () => {
   const [isCheck, setIsCheck] = useState(true);
@@ -25,7 +26,7 @@ const Index = () => {
         translucent
         barStyle="dark-content"
       />
-      <View className="bg-[#F3F4F6] py-4 flex-1 px-4">
+      <View className="bg-green-100 py-4 flex-1 px-4">
         <View className="">
           <View className="border border-white  rounded-sm bg-white p-2">
             <Text className="text-2xl mb-5 text-[#111827]">Hey, Gowtham</Text>
@@ -150,9 +151,237 @@ const Index = () => {
             </View>
           )}
         </View>
+        <Link href={"/login"}>
+          <Text>hello</Text>
+        </Link>
       </View>
     </>
   );
 };
 
 export default Index;
+
+
+
+
+
+// import React, { useState, useEffect } from "react";
+// import { Picker } from "@react-native-picker/picker";
+// import Ionicons from "@expo/vector-icons/Ionicons";
+// import "../global.css";
+// import {
+//   StatusBar,
+//   Text,
+//   View,
+//   TextInput,
+//   TouchableOpacity,
+//   Alert,
+//   ScrollView,
+// } from "react-native";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { Link } from "expo-router";
+
+// // ✅ Correct import for .env
+// import { SERVER_URL } from '@env';
+
+// const Index = () => {
+//   const [isCheck, setIsCheck] = useState(true);
+//   const [Toscan, setToscan] = useState(false);
+//   const [TId, setTId] = useState("");
+
+//   const [name, setName] = useState("");
+//   const [vehicleNumber, setVehicleNumber] = useState("");
+//   const [mobile, setMobile] = useState("");
+//   const [vehicleType, setVehicleType] = useState("cycle");
+//   const [paymentMethod, setPaymentMethod] = useState("cash");
+
+//   const handleCheckin = async () => {
+//     if (!name || !vehicleNumber || !mobile) {
+//       return Alert.alert("Missing Fields", "Please fill all fields");
+//     }
+
+//     const token = await AsyncStorage.getItem("token");
+
+//     try {
+//       const res = await fetch(`${SERVER_URL}/api/checkin`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({
+//           name,
+//           vehicleType,
+//           numberPlate: vehicleNumber,
+//           mobileNumber: mobile,
+//         }),
+//       });
+
+//       const data = await res.json();
+//       if (res.ok) {
+//         Alert.alert("Success", data.message);
+//       } else {
+//         Alert.alert("Error", data.message);
+//       }
+//     } catch (err) {
+//       Alert.alert("Error", "Check-in failed");
+//     }
+//   };
+
+//   const handleCheckout = async () => {
+//     if (!TId) return Alert.alert("Missing", "Please enter or scan token ID");
+
+//     try {
+//       const res = await fetch(`${SERVER_URL}/api/checkout`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({ tokenId: TId }),
+//       });
+
+//       const data = await res.json();
+//       if (res.ok) {
+//         Alert.alert("Checkout Success", `Amount Paid: ₹${data?.receipt?.table?.amountPaid}`);
+//       } else {
+//         Alert.alert("Error", data.message);
+//       }
+//     } catch (err) {
+//       Alert.alert("Error", "Checkout failed");
+//     }
+//   };
+
+//   const Scan = ({ onScanned }) => {
+//     useEffect(() => {
+//       setTimeout(() => {
+//         onScanned("TOKEN123456");
+//       }, 2000);
+//     }, []);
+//     return (
+//       <View className="bg-blue-100 p-4 mt-2 rounded items-center">
+//         <Text>Scanning...</Text>
+//       </View>
+//     );
+//   };
+
+//   return (
+//     <>
+//       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+//       <ScrollView className="bg-green-100 py-4 flex-1 px-4">
+//         <View className="border border-white rounded-sm bg-white p-2">
+//           <Text className="text-2xl mb-5 text-[#111827]">Hey, Gowtham</Text>
+//           <View className="flex-row justify-around">
+//             <TouchableOpacity
+//               className="bg-green-400 items-center justify-center px-6 py-2 rounded-sm"
+//               onPress={() => setIsCheck(true)}
+//             >
+//               <Text className="text-2xl text-[#111827]">Check In</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity
+//               className="bg-[#EF4444] items-center justify-center px-6 py-2 rounded-sm"
+//               onPress={() => setIsCheck(false)}
+//             >
+//               <Text className="text-2xl text-[#111827]">Check Out</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//         <View className="pt-5">
+//           {isCheck ? (
+//             <View className="gap-5">
+//               <Text className="text-2xl">Check In</Text>
+//               <View className="bg-white p-3 gap-3 rounded-sm">
+//                 <TextInput
+//                   placeholder="Name"
+//                   value={name}
+//                   onChangeText={setName}
+//                   className="bg-blue-100 rounded-sm px-2 h-14"
+//                 />
+//                 <TextInput
+//                   placeholder="Vehicle Number"
+//                   value={vehicleNumber}
+//                   onChangeText={setVehicleNumber}
+//                   className="bg-blue-100 rounded-sm px-2 h-14"
+//                 />
+//                 <TextInput
+//                   placeholder="Mobile Number"
+//                   keyboardType="number-pad"
+//                   value={mobile}
+//                   onChangeText={setMobile}
+//                   className="bg-blue-100 rounded-sm px-2 h-14"
+//                 />
+
+//                 <Picker
+//                   selectedValue={vehicleType}
+//                   onValueChange={(val) => setVehicleType(val)}
+//                   style={{ height: 50, backgroundColor: "#DBEAFE" }}
+//                 >
+//                   <Picker.Item label="Cycle" value="cycle" />
+//                   <Picker.Item label="Bike" value="bike" />
+//                   <Picker.Item label="Car" value="car" />
+//                   <Picker.Item label="Van" value="van" />
+//                 </Picker>
+
+//                 <Picker
+//                   selectedValue={paymentMethod}
+//                   onValueChange={(val) => setPaymentMethod(val)}
+//                   style={{ height: 50, backgroundColor: "#DBEAFE" }}
+//                 >
+//                   <Picker.Item label="Cash" value="cash" />
+//                   <Picker.Item label="GPay" value="gpay" />
+//                   <Picker.Item label="PhonePe" value="phonepe" />
+//                   <Picker.Item label="Paytm" value="paytm" />
+//                 </Picker>
+
+//                 <View className="items-center">
+//                   <TouchableOpacity className="bg-green-500 px-10 py-3 rounded-sm" onPress={handleCheckin}>
+//                     <Text className="text-xl text-white">Enter</Text>
+//                   </TouchableOpacity>
+//                 </View>
+//               </View>
+//             </View>
+//           ) : (
+//             <View className="gap-5">
+//               <Text className="text-2xl">Check Out</Text>
+//               <View className="flex-row items-center gap-2 bg-white p-2 rounded-sm">
+//                 <TextInput
+//                   placeholder="Token ID"
+//                   value={TId}
+//                   onChangeText={setTId}
+//                   className="bg-blue-100 flex-1 px-2 h-14 rounded-sm"
+//                 />
+//                 <Ionicons
+//                   onPress={() => setToscan(!Toscan)}
+//                   name="scan-outline"
+//                   size={25}
+//                   color="#111"
+//                 />
+//               </View>
+
+//               {Toscan && (
+//                 <Scan
+//                   onScanned={(data) => {
+//                     setTId(data);
+//                     setToscan(false);
+//                   }}
+//                 />
+//               )}
+
+//               <View className="items-center">
+//                 <TouchableOpacity className="bg-green-500 px-10 py-3 rounded-sm" onPress={handleCheckout}>
+//                   <Text className="text-xl text-white">Enter</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             </View>
+//           )}
+//         </View>
+
+//         <Link href="/login">
+//           <Text className="mt-5 underline text-blue-700">Go to Login</Text>
+//         </Link>
+//       </ScrollView>
+//     </>
+//   );
+// };
+
+// export default Index;

@@ -18,7 +18,7 @@ function TopBar() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaView className="bg-green-500" style={{ flex: 1 }}>
+    <SafeAreaView className="bg-[#3CDF70]" style={{ flex: 1 }}>
       <View className="px-4">
         <TopBar />
       </View>

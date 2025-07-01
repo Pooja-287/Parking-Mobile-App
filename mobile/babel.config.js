@@ -1,3 +1,23 @@
+// module.exports = function (api) {
+//   api.cache(true);
+//   return {
+//     presets: [
+//       ["babel-preset-expo", { tsxImportSource: "nativewind" }],
+//       "nativewind/babel",
+//     ],
+//     plugins: [
+//     ['module:react-native-dotenv', {
+//       moduleName: '@env',
+//       path: '.env',
+//     }],
+//   ]
+    
+//   };
+// };
+
+
+
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -5,5 +25,11 @@ module.exports = function (api) {
       ["babel-preset-expo", { tsxImportSource: "nativewind" }],
       "nativewind/babel",
     ],
+    plugins: [
+      ['module:react-native-dotenv', {
+        moduleName: '@env',
+        path: '.env',
+      }],
+    ], // ✅ <- Don't forget this closing bracket
   };
 };
