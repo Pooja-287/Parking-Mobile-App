@@ -6,16 +6,25 @@ import {
   TouchableOpacity,
   Text,
   Dimensions,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import userAuthStore from "../utils/store";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const { user, login } = userAuthStore();
 
   const screenWidth = Dimensions.get("window").width;
+
+  const handleLogin = async () => {
+    const result = await login(email, password);
+
+    if (!result.success) Alert.alert("Error", result.error);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-green-100 justify-center items-center px-5 font-sans">
@@ -41,7 +50,6 @@ const Login = () => {
             value={email}
             onChangeText={setEmail}
             className="flex-1 py-4 px-2 text-lg text-gray-800 outline-none"
-            keyboardType="email-address"
           />
         </View>
 
@@ -66,7 +74,10 @@ const Login = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity className="bg-[#4CAF50] py-4 rounded-xl">
+        <TouchableOpacity
+          className="bg-[#4CAF50] py-4 rounded-xl"
+          onPress={handleLogin}
+        >
           <Text className="text-center text-xl text-white font-semibold ">
             Login
           </Text>
