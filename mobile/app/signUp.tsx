@@ -31,6 +31,7 @@ const Signup = () => {
     if (!result.success) {
       Alert.alert("Error", result.error);
     } else {
+      Alert.alert("Signup Successfully");
       return <Redirect href={"/login"} />;
     }
   };
@@ -63,7 +64,7 @@ const Signup = () => {
 
               {/* Username */}
               <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
-                <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans">
+                <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans z-10 pointer-events-none">
                   Username
                 </Text>
                 <Ionicons name="person-outline" size={20} color="#6B7280" />
