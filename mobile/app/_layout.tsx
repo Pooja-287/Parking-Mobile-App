@@ -1,14 +1,14 @@
-// import useLogin from "@/utils/store";
+import userAuthStore from "@/utils/store";
 import { Stack } from "expo-router";
 
 export default function RootLayout() {
-  // const isLogged = useLogin((state) => state.isLogged);
+  const isLogged = userAuthStore((state) => state.isLogged);
   return (
     <Stack>
-      <Stack.Protected guard={true}>
+      <Stack.Protected guard={isLogged}>
         <Stack.Screen name="(protected)" options={{ headerShown: false }} />
       </Stack.Protected>
-      <Stack.Protected guard={!true}>
+      <Stack.Protected guard={!isLogged}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
