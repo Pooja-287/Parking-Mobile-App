@@ -1,8 +1,10 @@
 import Staff  from '../model/staff.js';
 import VehicleCheckin from '../model/checkin.js';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs'
 
 // 🔐 Create a staff (by admin)
+
 const createStaff = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -17,19 +19,25 @@ const createStaff = async (req, res) => {
       return res.status(400).json({ message: "Username already exists" });
     }
 
+    // ✅ Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newStaff = new Staff({
       username,
-      password, // you can hash with bcrypt if needed
+      password: hashedPassword,
+      role: 'staff', // Optional but useful
       createdBy: adminId
     });
 
     await newStaff.save();
+
     res.status(201).json({ message: "Staff created successfully", staff: newStaff });
 
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 
 
 

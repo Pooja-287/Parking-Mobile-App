@@ -28,6 +28,7 @@ router.post('/api/create/:id', verifyToken, staffController.createStaff);
 router.get('/api/all', verifyToken, staffController.getAllStaffs);
 router.put('/api/update/:staffId', verifyToken, staffController.updateStaff);
 router.delete('/api/delete/:staffId', verifyToken, staffController.deleteStaff);
+router.get('/api/profile', verifyToken, userController.viewProfile)
 
 // Staff-only
 router.get('/api/today-checkins', verifyStaff, staffController.getStaffTodayVehicles);
@@ -36,7 +37,7 @@ router.get('/api/today-revenue', verifyStaff, staffController.getStaffTodayReven
 
 // Admin management
 router.post('/api/register', upload.single('profileImage'),userController.registerAdmin);
-router.post('/api/loginUser', upload.single('profileImage'),verifyToken, userController.loginUser);
+router.post('/api/loginUser', upload.single('profileImage'),userController.loginUser);
 router.get('/api/getAllAdmins', verifyToken, userController.getAllAdmins);
 router.get('/api/getAdminById/:id', verifyToken, userController.getAdminById);
 router.put('/api/updateAdmin/:id', verifyToken, userController.updateAdmin);
