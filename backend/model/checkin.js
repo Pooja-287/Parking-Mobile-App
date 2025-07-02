@@ -69,6 +69,11 @@ const vehicleCheckinSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'checkedOutByRole'
   },
+  paymentMode: {
+  type: String,
+  enum: ['cash', 'upi', 'card'],
+  default: null
+  },
   checkedOutByRole: {
     type: String,
     enum: ['Admin', 'Staff']

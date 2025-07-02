@@ -226,6 +226,128 @@ const Checkout = async (req, res) => {
   }
 };
 
+
+// const Checkout = async (req, res) => {
+//   try {
+//     const { tokenId } = req.body;
+//     const userId = req.user._id;
+//     const userRole = req.user.role;
+
+//     if (!tokenId) {
+//       return res.status(400).json({ message: "tokenId is required" });
+//     }
+
+//     const vehicle = await VehicleCheckin.findOne({ tokenId });
+
+//     if (!vehicle) {
+//       return res.status(404).json({ message: "No check-in found with this tokenId" });
+//     }
+
+//     if (vehicle.isCheckedOut) {
+//       return res.status(400).json({
+//         message: "Vehicle is already checked out",
+//         exitTimeIST: convertToISTString(vehicle.exitDateTime)
+//       });
+//     }
+
+//     const exitTime = new Date();
+//     const entryTime = new Date(vehicle.entryDateTime);
+//     const timeDiffMs = exitTime - entryTime;
+
+//     const priceData = await Price.findOne({ vehicleType: vehicle.vehicleType });
+//     if (!priceData) {
+//       return res.status(404).json({ message: `No pricing info found for ${vehicle.vehicleType}` });
+//     }
+
+//     let totalAmount = 0;
+//     let readableDuration = "";
+//     const minutesUsed = timeDiffMs / (1000 * 60);
+
+//     if (priceData.priceType === 'perHour') {
+//       const pricePerMinute = priceData.price / 60;
+//       totalAmount = parseFloat((minutesUsed * pricePerMinute).toFixed(2));
+//       readableDuration = minutesUsed >= 1
+//         ? `${Math.floor(minutesUsed)} min${Math.floor(minutesUsed) > 1 ? 's' : ''}`
+//         : `${Math.round(timeDiffMs / 1000)} sec`;
+//     } else if (priceData.priceType === 'perDay') {
+//       const days = timeDiffMs / (1000 * 60 * 60 * 24);
+//       const fullDays = Math.ceil(days);
+//       totalAmount = fullDays * priceData.price;
+//       readableDuration = `${fullDays} day${fullDays > 1 ? 's' : ''}`;
+//     }
+
+//     vehicle.exitDateTime = exitTime;
+//     vehicle.totalAmount = totalAmount;
+//     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
+//     vehicle.isCheckedOut = true;
+//     vehicle.checkedOutBy = userId;
+//     vehicle.checkedOutByRole = capitalize(userRole);
+
+//     await vehicle.save();
+
+//     res.status(200).json({
+//       message: "Checkout completed. Proceed to payment.",
+//       tokenId: tokenId,
+//       totalAmount: totalAmount,
+//       receipt: {
+//         vehicleType: vehicle.vehicleType,
+//         numberPlate: vehicle.vehicleNumber,
+//         timeUsed: readableDuration
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error("Checkout error:", error);
+//     res.status(500).json({ message: "Internal Server Error", error: error.message });
+//   }
+// };
+
+// const MakePayment = async (req, res) => {
+//   try {
+//     const { tokenId, paymentMode } = req.body;
+
+//     if (!tokenId || !paymentMode) {
+//       return res.status(400).json({ message: "tokenId and paymentMode are required" });
+//     }
+
+//     if (!['cash', 'upi', 'card'].includes(paymentMode)) {
+//       return res.status(400).json({ message: "Invalid payment mode" });
+//     }
+
+//     const vehicle = await VehicleCheckin.findOne({ tokenId });
+
+//     if (!vehicle) {
+//       return res.status(404).json({ message: "No vehicle found with this tokenId" });
+//     }
+
+//     if (!vehicle.isCheckedOut) {
+//       return res.status(400).json({ message: "Please checkout before making payment" });
+//     }
+
+//     if (vehicle.paymentMode) {
+//       return res.status(400).json({ message: "Payment already completed" });
+//     }
+
+//     vehicle.paymentMode = paymentMode;
+//     await vehicle.save();
+
+//     res.status(200).json({
+//       message: "Payment successful",
+//       paymentDetails: {
+//         tokenId,
+//         amountPaid: vehicle.totalAmount,
+//         paymentMode
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error("Payment error:", error);
+//     res.status(500).json({ message: "Internal Server Error", error: error.message });
+//   }
+// };
+
+
+
 const getCheckins = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -526,6 +648,7 @@ export default{
     getVehicleByToken,
     getVehicleByNumberPlate,
     getRevenueReport,
-    getVehicleByPlate
+    getVehicleByPlate,
+    // MakePayment,
 
 };

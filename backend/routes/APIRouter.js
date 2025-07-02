@@ -4,7 +4,8 @@ import userController from '../controller/userController.js';
 import { verifyToken, verifyStaff } from '../middleware/verifyToken.js';
 import staffController from '../controller/staffController.js';
 import passController from '../controller/passController.js';
-import upload from '../middleware/upload.js'
+import upload from '../middleware/upload.js';
+
 
 const router = express.Router();
 
@@ -45,7 +46,13 @@ router.delete('/api/deleteAdmin/delete/:id', verifyToken, userController.deleteA
 router.post('/api/addPrice/:adminId/price', verifyToken, userController.addPrice);
 router.put('/api/updatePrice/:adminId/price/:priceId', verifyToken, userController.updatePrice);
 
+
+
+
 router.post('/api/createMonthlyPass', verifyToken, passController.createMonthlyPass);
-router.post('/api/renewMonthlyPass/:id', verifyToken, passController.renewMonthlyPass)
+router.post('/api/renewMonthlyPass/:id', verifyToken, passController.renewMonthlyPass);
+
+
+
 
 export default router;
