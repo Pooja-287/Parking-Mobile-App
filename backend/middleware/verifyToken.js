@@ -100,6 +100,7 @@ const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, SECRET_KEY);
     const userId = decoded._id || decoded.id;
 
+    // ✅ Check Admin
     let user = await Admin.findById(userId);
     if (user) {
       req.user = {
@@ -107,24 +108,28 @@ const verifyToken = async (req, res, next) => {
         role: user.role || 'admin',
         username: user.username,
       };
-      return next();
+    } else {
+      // ✅ Check Staff
+      user = await Staff.findById(userId);
+      if (user) {
+        req.user = {
+          _id: user._id,
+          role: user.role || 'staff',
+          username: user.username,
+        };
+      } else {
+        return res.status(404).json({ message: 'User not found' });
+      }
     }
 
-    user = await Staff.findById(userId);
-    if (user) {
-      req.user = {
-        _id: user._id,
-        role: user.role || 'staff',
-        username: user.username,
-      };
-      return next();
-    }
+    // ✅ Always call next after user is set
+    next();
 
-    return res.status(404).json({ message: 'User not found' });
   } catch (error) {
     return res.status(403).json({ message: 'Invalid or expired token', error: error.message });
   }
 };
+
 
 /**
  * Middleware: Only allow Admin users
