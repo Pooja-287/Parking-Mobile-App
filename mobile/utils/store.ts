@@ -16,6 +16,11 @@ type user = {
     password: string
   ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
+  checkIn: (
+    username: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: any }>;
 };
 
 const userAuthStore = create<user>((set) => ({
@@ -26,17 +31,20 @@ const userAuthStore = create<user>((set) => ({
   signup: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
-      });
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            email,
+            password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -56,27 +64,30 @@ const userAuthStore = create<user>((set) => ({
   login: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch("http://localhost:5000/api/loginAdmin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/loginUser",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
-      await AsyncStorage.setItem("user", JSON.stringify(data.admin));
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
       await AsyncStorage.setItem("token", data.token);
 
       set({
         token: data.token,
-        user: data.admin,
+        user: data.user,
         isLoading: false,
         isLogged: true,
       });
@@ -90,7 +101,7 @@ const userAuthStore = create<user>((set) => ({
   logOut: async () => {
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem("token");
-    set({ token: null, user: null });
+    set({ token: null, user: null, isLogged: false });
   },
 }));
 
