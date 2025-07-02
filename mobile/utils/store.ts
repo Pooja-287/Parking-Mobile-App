@@ -103,6 +103,7 @@ const userAuthStore = create<user>((set) => ({
     await AsyncStorage.removeItem("token");
     set({ token: null, user: null, isLogged: false });
   },
+  checkIn: async () => {},
 }));
 
 export default userAuthStore;
