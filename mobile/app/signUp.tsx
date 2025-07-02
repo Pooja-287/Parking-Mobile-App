@@ -10,11 +10,12 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link } from "expo-router";
-// import userAuthStore from "../utils/store";
+import { Link, Redirect } from "expo-router";
+import userAuthStore from "../utils/store";
 
 const Signup = () => {
   const [userName, setUserName] = useState("");
@@ -23,7 +24,17 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // const { signup } = userAuthStore();
+  const { signup } = userAuthStore();
+
+  const handleSignup = async () => {
+    const result = await signup(userName, email, password);
+    if (!result.success) {
+      Alert.alert("Error", result.error);
+    } else {
+      Alert.alert("Signup Successfully");
+      return <Redirect href={"/login"} />;
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-green-100">
@@ -53,7 +64,7 @@ const Signup = () => {
 
               {/* Username */}
               <View className="flex-row items-center border border-gray-300 rounded-xl px-3">
-                <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans">
+                <Text className="absolute transform -translate-y-8 text-xl bg-white translate-x-3 font-sans z-10 pointer-events-none">
                   Username
                 </Text>
                 <Ionicons name="person-outline" size={20} color="#6B7280" />
@@ -136,7 +147,7 @@ const Signup = () => {
               {/* Signup Button */}
               <TouchableOpacity
                 className="bg-[#4CAF50] py-4 rounded-xl"
-                // onPress={handleSignup}
+                onPress={handleSignup}
               >
                 <Text className="text-center text-xl text-white font-semibold">
                   Signup

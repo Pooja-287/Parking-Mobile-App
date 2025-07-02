@@ -6,6 +6,11 @@ type user = {
   token: string | null;
   isLoading: boolean;
   isLogged: boolean;
+  signup: (
+    username: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: any }>;
   login: (
     username: string,
     password: string
@@ -18,6 +23,36 @@ const userAuthStore = create<user>((set) => ({
   token: null,
   isLogged: false,
   isLoading: false,
+  signup: async (username: string, email: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+
+      set({
+        isLoading: false,
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
   login: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
