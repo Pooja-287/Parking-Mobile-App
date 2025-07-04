@@ -229,6 +229,60 @@ const getAdminById = async (req, res) => {
 };
 
 // Update admin
+// const updateAdmin = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+
+//     const updateData = { username };
+//     if (password) {
+//       updateData.password = await bcrypt.hash(password, 10);
+//     }
+
+//     const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     if (!updatedAdmin) return res.status(404).json({ message: 'Admin not found' });
+
+//     res.status(200).json({ message: 'Admin updated', admin: updatedAdmin });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error updating admin', error: error.message });
+//   }
+// };
+
+
+
+// const updateAdmin = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+
+//     const updateData = { username };
+//     if (password) {
+//       updateData.password = await bcrypt.hash(password, 10);
+//     }
+
+//     const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     if (!updatedAdmin)
+//       return res.status(404).json({ success: false, message: "Admin not found" });
+
+//     // ✅ ADD "success: true" in the response
+//     res.status(200).json({
+//       success: true,
+//       message: "Admin updated",
+//       admin: updatedAdmin,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Error updating admin", error: error.message });
+//   }
+// };
+
+
+
 const updateAdmin = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -243,13 +297,25 @@ const updateAdmin = async (req, res) => {
       runValidators: true,
     });
 
-    if (!updatedAdmin) return res.status(404).json({ message: 'Admin not found' });
+    if (!updatedAdmin) {
+      return res.status(404).json({ success: false, message: "Admin not found" });
+    }
 
-    res.status(200).json({ message: 'Admin updated', admin: updatedAdmin });
+    res.status(200).json({
+      success: true,
+      message: "Admin updated",
+      admin: updatedAdmin,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating admin', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error updating admin",
+      error: error.message,
+    });
   }
 };
+
+
 
 // Delete admin
 const deleteAdmin = async (req, res) => {
