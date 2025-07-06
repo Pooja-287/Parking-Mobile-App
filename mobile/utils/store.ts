@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type user = {
   user: string | null;
   token: string | null;
+  prices: object;
   isLoading: boolean;
   isLogged: boolean;
   signup: (
@@ -17,22 +18,27 @@ type user = {
   ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
   checkIn: (
-    username: string,
-    email: string,
-    password: string
+    name: string,
+    vehicleNo: string,
+    vehicleType: string,
+    mobile: string,
+    paymentMethod: string,
+    days: string,
+    amount: number
   ) => Promise<{ success: boolean; error?: any }>;
 };
 
 const userAuthStore = create<user>((set) => ({
   user: null,
   token: null,
+  prices: {},
   isLogged: false,
   isLoading: false,
   signup: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/register",
         {
           method: "POST",
           headers: {
@@ -65,7 +71,7 @@ const userAuthStore = create<user>((set) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/loginUser",
         {
           method: "POST",
           headers: {
@@ -82,12 +88,28 @@ const userAuthStore = create<user>((set) => ({
 
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
+
+      const responsePrice = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
+        {
+          method: "get",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data.token}`,
+          },
+        }
+      );
+
+      const data1 = await responsePrice.json();
+
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
+      await AsyncStorage.setItem("prices", JSON.stringify(data1.vehicle));
       await AsyncStorage.setItem("token", data.token);
 
       set({
         token: data.token,
         user: data.user,
+        prices: data1.vehicle,
         isLoading: false,
         isLogged: true,
       });
@@ -101,159 +123,53 @@ const userAuthStore = create<user>((set) => ({
   logOut: async () => {
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem("token");
-    set({ token: null, user: null, isLogged: false });
+    await AsyncStorage.removeItem("prices");
+    set({ token: null, user: null, prices: {}, isLogged: false });
   },
-  checkIn: async () => {
-    
+  checkIn: async (
+    name,
+    vehicleNo,
+    vehicleType,
+    mobile,
+    paymentMethod,
+    days,
+    amount
+  ) => {
+    set({ isLoading: true });
+    try {
+      const user = await AsyncStorage.getItem("user");
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name,
+            vehicleNo,
+            vehicleType,
+            mobile,
+            paymentMethod,
+            days,
+            amount,
+            user: JSON.parse(user || ""),
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
   },
 }));
 
 export default userAuthStore;
-
-
-
-
-
-
-
-
-// import { create } from "zustand";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// type user = {
-//   _id: string;
-//   username: string;
-//   email: string;
-//   avatar?: string;
-// };
-
-// type AuthStore = {
-//   user: user | string | null;
-//   token: string | null;
-//   isLoading: boolean;
-//   isLogged: boolean;
-//   signup: (
-//     username: string,
-//     email: string,
-//     password: string
-//   ) => Promise<{ success: boolean; error?: any }>;
-//   login: (
-//     username: string,
-//     password: string
-//   ) => Promise<{ success: boolean; error?: any }>;
-//   updateProfile: (
-//     id: string,
-//     username: string,
-//     password?: string
-//   ) => Promise<{ success: boolean; error?: any }>;
-//   logOut: () => Promise<void>;
-//   checkIn: () => Promise<{ success: boolean; error?: any }>;
-// };
-
-// const userAuthStore = create<AuthStore>((set, get) => ({
-//   user: null,
-//   token: null,
-//   isLoading: false,
-//   isLogged: false,
-
-//   // ✅ SIGNUP
-//   signup: async (username, email, password) => {
-//     set({ isLoading: true });
-//     try {
-//       const res = await fetch("https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ username, email, password }),
-//       });
-//       const data = await res.json();
-//       if (!res.ok) throw new Error(data.message || "Signup failed");
-//       set({ isLoading: false });
-//       return { success: true };
-//     } catch (error: any) {
-//       set({ isLoading: false });
-//       return { success: false, error: error.message };
-//     }
-//   },
-
-//   // ✅ LOGIN
-//   login: async (username, password) => {
-//     set({ isLoading: true });
-//     try {
-//       const res = await fetch("https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ username, password }),
-//       });
-
-//       const data = await res.json();
-//       if (!res.ok) throw new Error(data.message || "Login failed");
-
-//       // ✅ Ensure correct ID format
-//       const correctedUser = {
-//         ...data.user,
-//         _id: data.user._id || data.user.id,
-//       };
-
-//       await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-//       await AsyncStorage.setItem("token", data.token);
-
-//       set({
-//         user: correctedUser,
-//         token: data.token,
-//         isLoading: false,
-//         isLogged: true,
-//       });
-
-//       return { success: true };
-//     } catch (error: any) {
-//       set({ isLoading: false });
-//       return { success: false, error: error.message };
-//     }
-//   },
-
-//   // ✅ UPDATE PROFILE
-//   updateProfile: async (id, username, password) => {
-//     set({ isLoading: true });
-//     try {
-//       let token = get().token || (await AsyncStorage.getItem("token"));
-
-//       const res = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//           username,
-//           ...(password ? { password } : {}),
-//         }),
-//       });
-
-//       const data = await res.json();
-//       console.log("⬅️ Backend response:", data);
-
-//       if (!res.ok) throw new Error(data.message || "Update failed");
-
-//       await AsyncStorage.setItem("user", JSON.stringify(data.admin));
-//       set({ user: data.admin, isLoading: false });
-
-//       return { success: true };
-//     } catch (error: any) {
-//       set({ isLoading: false });
-//       return { success: false, error: error.message };
-//     }
-//   },
-
-//   // ✅ LOGOUT
-//   logOut: async () => {
-//     await AsyncStorage.removeItem("user");
-//     await AsyncStorage.removeItem("token");
-//     set({ user: null, token: null, isLogged: false });
-//   },
-
-//   checkIn: async () => {
-//     return { success: true };
-//   },
-// }));
-
-// export default userAuthStore;

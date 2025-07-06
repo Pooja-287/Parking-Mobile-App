@@ -1,77 +1,94 @@
 // import Admin from '../model/admin'
-import Admin from '../model/admin.js';
-import Price from '../model/price.js';
-import Staff from '../model/staff.js'
+import Admin from "../model/admin.js";
+import Price from "../model/price.js";
+import Staff from "../model/staff.js";
 
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 // import Price from '../model/price'
-import jwt from 'jsonwebtoken';
-const SECRET_KEY = 'your_secret_key'; // ✅ define or use process.env.SECRET_KEY
+import jwt from "jsonwebtoken";
+const SECRET_KEY = "your_secret_key";
 
-
-// Add price for a vehicle (admin only)
 const addPrice = async (req, res) => {
   try {
-    const adminId = req.params.adminId; // comes from route
-    const { vehicleType, priceType, price } = req.body;
+    const adminId = req.user?._id;
+    const { vehicle } = req.body;
 
-    const newPrice = new Price({
-      adminId,
-      vehicleType,
-      priceType,
-      price
-    });
+    if (!vehicle || typeof vehicle !== "object") {
+      return res.status(400).json({ message: "Vehicle prices are required" });
+    }
 
+    // Check if admin already has a Price document
+    const existingPrice = await Price.findOne({ adminId });
+
+    if (existingPrice) {
+      return res
+        .status(400)
+        .json({ message: "Price already exists for this admin" });
+    }
+
+    const newPrice = new Price({ adminId, vehicle });
     await newPrice.save();
-    res.status(201).json({ message: 'Price added successfully', price: newPrice });
+
+    res.status(201).json({
+      message: "Price added successfully",
+      price: newPrice,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
 
 const updatePrice = async (req, res) => {
   try {
-    const { adminId, priceId } = req.params;
-    const { vehicleType, priceType, price } = req.body;
+    const adminId = req.user?._id;
+    const { vehicle } = req.body;
 
-    // Validate inputs
-    if (!vehicleType || !priceType || typeof price !== 'number') {
-      return res.status(400).json({ message: 'vehicleType, priceType and price are required' });
+    if (!vehicle || typeof vehicle !== "object") {
+      return res.status(400).json({ message: "Vehicle prices are required" });
     }
 
     const updatedPrice = await Price.findOneAndUpdate(
-      { _id: priceId, adminId },
-      {
-        $set: {
-          vehicleType,
-          priceType,
-          price
-        }
-      },
-      { new: true } // return the updated document
+      { adminId },
+      { $set: { vehicle } },
+      { new: true }
     );
 
     if (!updatedPrice) {
-      return res.status(404).json({ message: 'Price not found or not owned by this admin' });
+      return res.status(404).json({ message: "Price not found" });
     }
 
     res.status(200).json({
-      message: 'Price updated successfully',
-      price: updatedPrice
+      message: "Price updated successfully",
+      price: updatedPrice,
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
+const getPrice = async (req, res) => {
+  try {
+    const adminId = req.user?._id;
 
+    if (!adminId) {
+      return res.status(400).json({ message: "Admin Id required" });
+    }
 
+    const Prices = await Price.findOne({
+      adminId,
+    });
 
+    if (!Prices) {
+      return res
+        .status(404)
+        .json({ message: "Price not found or not owned by this admin" });
+    }
+
+    res.status(200).json(Prices);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const registerAdmin = async (req, res) => {
   try {
@@ -80,13 +97,17 @@ const registerAdmin = async (req, res) => {
 
     // Check required fields
     if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     // Check for existing admin
-    const existingAdmin = await Admin.findOne({ $or: [{ username }, { email }] });
+    const existingAdmin = await Admin.findOne({
+      $or: [{ username }, { email }],
+    });
     if (existingAdmin) {
-      return res.status(400).json({ message: 'Username or email already exists' });
+      return res
+        .status(400)
+        .json({ message: "Username or email already exists" });
     }
 
     // Hash password
@@ -97,7 +118,7 @@ const registerAdmin = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      profileImage // Will be null if not provided
+      profileImage, // Will be null if not provided
     });
 
     await newAdmin.save();
@@ -106,36 +127,34 @@ const registerAdmin = async (req, res) => {
     const token = jwt.sign(
       { id: newAdmin._id, username: newAdmin.username, role: newAdmin.role },
       SECRET_KEY,
-      { expiresIn: '1d' }
+      { expiresIn: "1d" }
     );
 
     // Response
     res.status(201).json({
-      message: 'Admin registered successfully',
+      message: "Admin registered successfully",
       token,
       admin: {
         id: newAdmin._id,
         username: newAdmin.username,
         email: newAdmin.email,
         role: newAdmin.role,
-        profileImage: newAdmin.profileImage // could be null
-      }
+        profileImage: newAdmin.profileImage, // could be null
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-
-
-
-
- const loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Username and password are required" });
     }
 
     let user, role;
@@ -145,27 +164,33 @@ const registerAdmin = async (req, res) => {
     if (user) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid username or password' });
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
-      role = 'admin';
+      role = "admin";
     } else {
       // Try as Staff
       user = await Staff.findOne({ username });
       if (!user) {
-        return res.status(401).json({ message: 'Invalid username or password' });
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid username or password' });
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
-      role = 'Staff';
+      role = "Staff";
     }
 
     const token = jwt.sign(
       { id: user._id, username: user.username, role },
       SECRET_KEY,
-      { expiresIn: '1d' }
+      { expiresIn: "1d" }
     );
 
     return res.status(200).json({
@@ -176,112 +201,59 @@ const registerAdmin = async (req, res) => {
         username: user.username,
         role,
         email: user.email || null,
-        profileImage: user.profileImage || null
-      }
+        profileImage: user.profileImage || null,
+      },
     });
-
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
-
-const viewProfile = async(req,res) => {
+const viewProfile = async (req, res) => {
   try {
-    const {_id, role} = req.user;
+    const { _id, role } = req.user;
     let user = null;
 
-    if(role === 'admin') {
-      user = await Admin.findById(_id).select('-password');
-    } else if(role === 'staff') {
-      user = await Staff.findById(_id).select('-password');
+    if (role === "admin") {
+      user = await Admin.findById(_id).select("-password");
+    } else if (role === "staff") {
+      user = await Staff.findById(_id).select("-password");
     }
-    if(!user) {
-      return res.status(400).json({message: "User not found"})
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
-    res.status(200).json({message: "Profile fetched successfully",
-       user,
-      });
-  }catch(error) {
-    res.status(500).json({message: "Server Error", error: error.message})
+    res.status(200).json({ message: "Profile fetched successfully", user });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
-}
+};
 
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find({}, '-password'); // exclude password
+    const admins = await Admin.find({}, "-password"); // exclude password
     res.status(200).json(admins);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching admins', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching admins", error: error.message });
   }
 };
 
 // Get single admin by ID
 const getAdminById = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.params.id, '-password');
-    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    const admin = await Admin.findById(req.params.id, "-password");
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
 
     res.status(200).json(admin);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching admin', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching admin", error: error.message });
   }
 };
-
-// Update admin
-// const updateAdmin = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
-
-//     const updateData = { username };
-//     if (password) {
-//       updateData.password = await bcrypt.hash(password, 10);
-//     }
-
-//     const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (!updatedAdmin) return res.status(404).json({ message: 'Admin not found' });
-
-//     res.status(200).json({ message: 'Admin updated', admin: updatedAdmin });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error updating admin', error: error.message });
-//   }
-// };
-
-
-
-// const updateAdmin = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
-
-//     const updateData = { username };
-//     if (password) {
-//       updateData.password = await bcrypt.hash(password, 10);
-//     }
-
-//     const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (!updatedAdmin)
-//       return res.status(404).json({ success: false, message: "Admin not found" });
-
-//     // ✅ ADD "success: true" in the response
-//     res.status(200).json({
-//       success: true,
-//       message: "Admin updated",
-//       admin: updatedAdmin,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: "Error updating admin", error: error.message });
-//   }
-// };
-
-
 
 const updateAdmin = async (req, res) => {
   try {
@@ -292,13 +264,19 @@ const updateAdmin = async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedAdmin = await Admin.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedAdmin = await Admin.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!updatedAdmin) {
-      return res.status(404).json({ success: false, message: "Admin not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
     }
 
     res.status(200).json({
@@ -315,27 +293,24 @@ const updateAdmin = async (req, res) => {
   }
 };
 
-
-
 // Delete admin
 const deleteAdmin = async (req, res) => {
   try {
     const deleted = await Admin.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Admin not found' });
+    if (!deleted) return res.status(404).json({ message: "Admin not found" });
 
-    res.status(200).json({ message: 'Admin deleted' });
+    res.status(200).json({ message: "Admin deleted" });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting admin', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error deleting admin", error: error.message });
   }
 };
 
-
-
-
 export default {
-
   addPrice,
   updatePrice,
+  getPrice,
   registerAdmin,
   loginUser,
   getAllAdmins,

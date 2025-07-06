@@ -1,16 +1,30 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Tabs, Link } from "expo-router";
-import { View, Text } from "react-native";
+import { Tabs, Link, Redirect } from "expo-router";
+import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import userAuthStore from "@/utils/store";
+import React from "react";
 
 function TopBar() {
+  const { logOut, isLogged } = userAuthStore();
+  const handleLogout = async () => {
+    await logOut();
+    if (!isLogged) {
+      return <Redirect href={"/login"} />;
+    }
+  };
   return (
     <View className="flex-row items-center justify-between">
       <View className="bg-white flex-1 flex-row items-center justify-between my-5 p-2.5 rounded-sm">
-        <Text className="text-xl font-extrabold">Parking App</Text>
-        <Link href="/profile">
-          <Ionicons name="person-circle-outline" size={40} />
-        </Link>
+        <View className="flex-row items-center justify-center gap-2">
+          <Link href="/profile">
+            <Ionicons name="person-circle-outline" size={40} />
+          </Link>
+          <Text className="text-xl font-extrabold">Parking App</Text>
+        </View>
+        <TouchableOpacity onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} />
+        </TouchableOpacity>
       </View>
     </View>
   );
