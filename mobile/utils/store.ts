@@ -5,6 +5,7 @@ type user = {
   user: string | null;
   token: string | null;
   prices: object;
+  Reciept: object;
   isLoading: boolean;
   isLogged: boolean;
   signup: (
@@ -24,13 +25,16 @@ type user = {
     mobile: string,
     paymentMethod: string,
     days: string,
-    amount: number
+    amount: number,
+    perDayRate: string
   ) => Promise<{ success: boolean; error?: any }>;
+  checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
 };
 
 const userAuthStore = create<user>((set) => ({
   user: null,
   token: null,
+  Reciept: {},
   prices: {},
   isLogged: false,
   isLoading: false,
@@ -120,12 +124,15 @@ const userAuthStore = create<user>((set) => ({
       return { success: false, error: error.message };
     }
   },
+
   logOut: async () => {
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("prices");
+    await AsyncStorage.clear();
     set({ token: null, user: null, prices: {}, isLogged: false });
   },
+
   checkIn: async (
     name,
     vehicleNo,
@@ -133,7 +140,8 @@ const userAuthStore = create<user>((set) => ({
     mobile,
     paymentMethod,
     days,
-    amount
+    amount,
+    perDayRate
   ) => {
     set({ isLoading: true });
     try {
@@ -155,6 +163,7 @@ const userAuthStore = create<user>((set) => ({
             paymentMethod,
             days,
             amount,
+            perDayRate,
             user: JSON.parse(user || ""),
           }),
         }
@@ -163,6 +172,33 @@ const userAuthStore = create<user>((set) => ({
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
+
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+  checkOut: async (tokenId: string) => {
+    set({ isLoading: true });
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tokenId,
+          }),
+        }
+      );
+      const data = await response.json();
+
+      set({ Reciept: data });
 
       return { success: true };
     } catch (error: any) {

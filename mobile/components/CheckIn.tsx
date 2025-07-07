@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
 import useAuthStore from "../utils/store";
+
+// Types
 type VehiclePrices = {
   [key: string]: number;
 };
@@ -28,9 +30,11 @@ const CheckIn = () => {
     setAmount(0);
   };
 
+  // Calculate amount based on type × days
   useEffect(() => {
-    setAmount(typedPrices[vehicleType] * +days);
-  }, [days, typedPrices, vehicleType]);
+    const rate = typedPrices[vehicleType] || 0;
+    setAmount(rate * Number(days));
+  }, [days, vehicleType, typedPrices]);
 
   const handleSubmit = async () => {
     if (!name || !vehicleNo || !mobile) {
@@ -44,118 +48,88 @@ const CheckIn = () => {
       vehicleType,
       mobile,
       paymentMethod,
-      days,
-      amount
+      Number(days),
+      amount,
+      typedPrices[vehicleType]
     );
+
     if (!result.success) {
-      Alert.alert("Error", result.error);
-      clearForm();
+      Alert.alert("Error", result.error || "Check-in failed");
+      return;
     }
-    if (result.success) {
-      Alert.alert("success");
-      clearForm();
-    }
+
+    Alert.alert("✅ Success", "Vehicle checked in");
+    clearForm();
   };
 
   return (
-    <View className="gap-5">
-      <Text className="text-2xl">Check In</Text>
-      <View className="bg-white ">
-        <View className="flex-1 p-2 gap-3">
-          {/* Name */}
-          <TextInput
-            placeholder="Name"
-            value={name}
-            onChangeText={setName}
-            className="rounded-sm px-1.5 h-14 flex-1 bg-blue-100"
-          />
+    <View className="gap-5 p-4">
+      <Text className="text-2xl font-bold text-blue-800">Check In</Text>
+      <View className="bg-white rounded-lg shadow-md p-4 space-y-4">
+        <TextInput
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          className="rounded px-3 h-12 bg-blue-100"
+        />
 
-          {/* Vehicle No */}
-          <TextInput
-            placeholder="Vehicle No"
-            value={vehicleNo}
-            onChangeText={setVehicleNo}
-            className="rounded-sm px-1.5 h-14 flex-1 bg-blue-100"
-          />
+        <TextInput
+          placeholder="Vehicle Number"
+          value={vehicleNo}
+          onChangeText={setVehicleNo}
+          className="rounded px-3 h-12 bg-blue-100"
+        />
 
-          {/* Vehicle Type */}
-          <Picker
-            selectedValue={vehicleType}
-            onValueChange={(val) => setVehicleType(val)}
-            style={{
-              height: 52,
-              flex: 1,
-              fontSize: 14,
-              backgroundColor: "#DBEAFE",
-            }}
-          >
-            <Picker.Item label="Cycle" value="cycle" />
-            <Picker.Item label="Bike" value="bike" />
-            <Picker.Item label="Car" value="car" />
-            <Picker.Item label="Van" value="van" />
-          </Picker>
+        <Picker
+          selectedValue={vehicleType}
+          onValueChange={setVehicleType}
+          style={{ height: 52, backgroundColor: "#DBEAFE" }}
+        >
+          <Picker.Item label="Cycle" value="cycle" />
+          <Picker.Item label="Bike" value="bike" />
+          <Picker.Item label="Car" value="car" />
+          <Picker.Item label="Van" value="van" />
+        </Picker>
 
-          {/* Mobile */}
-          <TextInput
-            placeholder="Mobile"
-            value={mobile}
-            onChangeText={setMobile}
-            keyboardType="number-pad"
-            className="rounded-sm px-1.5 bg-blue-100 h-14 flex-1"
-          />
+        <TextInput
+          placeholder="Mobile Number"
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="number-pad"
+          className="rounded px-3 h-12 bg-blue-100"
+        />
 
-          {/* Days */}
-          <Picker
-            selectedValue={days}
-            onValueChange={(val) => setDays(val)}
-            style={{
-              height: 52,
-              flex: 1,
-              fontSize: 14,
-              backgroundColor: "#DBEAFE",
-            }}
-          >
-            {[...Array(7)].map((_, i) => (
-              <Picker.Item
-                key={i + 1}
-                label={`${i + 1} Day${i > 0 ? "s" : ""}`}
-                value={`${i + 1}`}
-              />
-            ))}
-          </Picker>
+        <Picker selectedValue={days} onValueChange={(val) => setDays(val)}>
+          {[...Array(7)].map((_, i) => (
+            <Picker.Item
+              key={i + 1}
+              label={`${i + 1} Day`}
+              value={`${i + 1}`}
+            />
+          ))}
+        </Picker>
 
-          {/* Payment Method */}
-          <Picker
-            selectedValue={paymentMethod}
-            onValueChange={(val) => setPaymentMethod(val)}
-            style={{
-              height: 52,
-              flex: 1,
-              fontSize: 14,
-              backgroundColor: "#DBEAFE",
-            }}
-          >
-            <Picker.Item label="Cash" value="cash" />
-            <Picker.Item label="Gpay" value="gpay" />
-            <Picker.Item label="PhonePe" value="phonepe" />
-            <Picker.Item label="Paytm" value="paytm" />
-          </Picker>
+        <Picker
+          selectedValue={paymentMethod}
+          onValueChange={setPaymentMethod}
+          style={{ height: 52, backgroundColor: "#DBEAFE" }}
+        >
+          <Picker.Item label="Cash" value="cash" />
+          <Picker.Item label="GPay" value="gpay" />
+          <Picker.Item label="PhonePe" value="phonepe" />
+          <Picker.Item label="Paytm" value="paytm" />
+        </Picker>
 
-          {/* Amount Display */}
-          <View className="justify-center items-center pt-2">
-            <Text className="text-xl font-semibold">Amount: ₹{amount}</Text>
-          </View>
-
-          {/* Submit */}
-          <View className="justify-center items-center pt-4">
-            <TouchableOpacity
-              className="bg-green-500 p-3 px-10 rounded-md"
-              onPress={handleSubmit}
-            >
-              <Text className="text-xl text-white">Enter</Text>
-            </TouchableOpacity>
-          </View>
+        <View className="items-center">
+          <Text className="text-xl font-semibold">Amount: ₹{amount}</Text>
         </View>
+
+        <TouchableOpacity
+          className="bg-green-600 p-3 rounded-lg items-center"
+          onPress={handleSubmit}
+        >
+          <Text className="text-lg text-white">Enter</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

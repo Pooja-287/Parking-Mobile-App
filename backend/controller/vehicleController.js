@@ -3,8 +3,9 @@ import Price from "../model/price.js";
 import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import Staff from "../model/staff.js";
-import Admin from "../model/admin.js";
 import mongoose from "mongoose";
+// import { sendCheckInQR } from "../utils/sendWhatsAppTemplate.js";
+// import uploadQR from "../utils/ImageLinker.js";
 
 const Checkin = async (req, res) => {
   try {
@@ -61,8 +62,9 @@ const Checkin = async (req, res) => {
       });
     }
 
-    const tokenId = uuidv4();
-    const qrCode = await QRCode.toDataURL(tokenId);
+    const tokenId = uuidv4().split("-")[0];
+    // const raw_qrCode = await QRCode.toDataURL(tokenId);
+    // const qrCode = await uploadQR(raw_qrCode);
 
     const newCheckin = new VehicleCheckin({
       name,
@@ -79,6 +81,8 @@ const Checkin = async (req, res) => {
 
     await newCheckin.save();
 
+    // await sendCheckInQR(qrCode, tokenId, mobile);
+
     return res.status(201).json({
       message: "Vehicle checked in successfully",
       tokenId,
@@ -91,19 +95,10 @@ const Checkin = async (req, res) => {
   }
 };
 
-// Format time only (HH:MM:SS AM/PM)
-const formatTimeOnly = (date) => {
-  return new Date(date).toLocaleTimeString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    hour12: true,
-  });
-};
-
 const Checkout = async (req, res) => {
   try {
     const { tokenId } = req.body;
-    const userId = req.user._id;
-    const userRole = req.user.role;
+    const userId = req.user.username;
 
     if (!tokenId) {
       return res.status(400).json({ message: "tokenId is required" });
@@ -117,69 +112,55 @@ const Checkout = async (req, res) => {
         .json({ message: "No check-in found with this tokenId" });
     }
 
-    if (vehicle.isCheckedOut) {
+    if (vehicle.isCheckOut) {
       return res.status(400).json({
         message: "Vehicle is already checked out",
-        exitTimeIST: convertToISTString(vehicle.exitDateTime),
+        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
       });
     }
 
     const exitTime = new Date();
     const entryTime = new Date(vehicle.entryDateTime);
-    const timeDiffMs = exitTime - entryTime;
+    const diff = exitTime - entryTime;
 
-    const priceData = await Price.findOne({ vehicleType: vehicle.vehicleType });
-    if (!priceData) {
-      return res
-        .status(404)
-        .json({ message: `No pricing info found for ${vehicle.vehicleType}` });
+    const totalDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    const initialPaidDays = vehicle.paidDays || 0;
+    const perDayRate = vehicle.perDayRate || 50;
+    let extraDays = 0;
+    let extraAmount = 0;
+
+    if (totalDays > initialPaidDays) {
+      extraDays = totalDays - initialPaidDays;
+      extraAmount = extraDays * perDayRate;
     }
 
-    let totalAmount = 0;
-    let readableDuration = "";
-    const minutesUsed = timeDiffMs / (1000 * 60);
-
-    if (priceData.priceType === "perHour") {
-      const pricePerMinute = priceData.price / 60;
-      totalAmount = parseFloat((minutesUsed * pricePerMinute).toFixed(2));
-
-      readableDuration =
-        minutesUsed >= 1
-          ? `${Math.floor(minutesUsed)} min${
-              Math.floor(minutesUsed) > 1 ? "s" : ""
-            }`
-          : `${Math.round(timeDiffMs / 1000)} sec`;
-    } else if (priceData.priceType === "perDay") {
-      const days = timeDiffMs / (1000 * 60 * 60 * 24);
-      const fullDays = Math.ceil(days);
-      totalAmount = fullDays * priceData.price;
-      readableDuration = `${fullDays} day${fullDays > 1 ? "s" : ""}`;
-    }
-
-    vehicle.exitDateTime = exitTime;
-    vehicle.totalAmount = totalAmount;
-    vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
-    vehicle.isCheckedOut = true;
+    vehicle.CheckOutTime = exitTime;
+    vehicle.isCheckOut = true;
+    vehicle.totalDays = totalDays;
+    vehicle.extraDays = extraDays;
+    vehicle.extraAmount = extraAmount;
     vehicle.checkedOutBy = userId;
-    vehicle.checkedOutByRole = capitalize(userRole); // ✅ fixed
 
     await vehicle.save();
 
     res.status(200).json({
-      message: "Vehicle checked out successfully",
+      message: "✅ Vehicle checked out successfully",
       receipt: {
         name: vehicle.name,
-        mobileNumber: vehicle.mobileNumber,
+        mobile: vehicle.mobile,
+        tokenId: vehicle.tokenId,
+        user: userId,
+        vehicleNumber: vehicle.vehicleNo,
         vehicleType: vehicle.vehicleType,
-        numberPlate: vehicle.vehicleNumber,
-        table: {
-          entryTime: entryTime.toLocaleTimeString(),
-          exitTime: exitTime.toLocaleTimeString(),
-          timeUsed: readableDuration,
-          priceType: priceData.priceType,
-          price: `₹${priceData.price}`,
-          amountPaid: `₹${totalAmount}`,
-        },
+        entryTime: convertToISTString(vehicle.entryDateTime),
+        exitTime: convertToISTString(vehicle.CheckOutTime),
+        paidDays: initialPaidDays,
+        totalStayedDays: totalDays,
+        extraDays,
+        extraAmount,
+        perDayRate,
+        finalAmountDue: extraAmount,
       },
     });
   } catch (error) {

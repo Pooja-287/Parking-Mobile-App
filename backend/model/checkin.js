@@ -29,7 +29,7 @@ const vehicleCheckinSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    days: {
+    paidDays: {
       type: Number,
       required: true,
     },
@@ -37,17 +37,44 @@ const vehicleCheckinSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    checkInBy: {
-      type: String,
+    perDayRate: {
+      type: Number,
       required: true,
     },
-    adminId: {
-      type: String,
-      required: true,
+    entryDateTime: {
+      type: Date,
+      default: Date.now,
+    },
+    CheckOutTime: {
+      type: Date,
+    },
+    totalDays: {
+      type: Number,
+      default: 0,
+    },
+    extraDays: {
+      type: Number,
+      default: 0,
+    },
+    extraAmount: {
+      type: Number,
+      default: 0,
     },
     isCheckOut: {
       type: Boolean,
       default: false,
+    },
+    checkInBy: {
+      type: String,
+      required: true,
+    },
+    checkOutBy: {
+      type: String,
+      default: "",
+    },
+    adminId: {
+      type: String,
+      required: true,
     },
   },
   { timestamps: true }
