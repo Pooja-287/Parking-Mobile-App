@@ -220,6 +220,50 @@ const userAuthStore = create<user>((set, get) => ({
     await AsyncStorage.removeItem("prices");
     set({ token: null, user: null, prices: {}, isLogged: false });
   },
+  checkIn: async (
+    name,
+    vehicleNo,
+    vehicleType,
+    mobile,
+    paymentMethod,
+    days,
+    amount
+  ) => {
+    set({ isLoading: true });
+    try {
+      const user = await AsyncStorage.getItem("user");
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name,
+            vehicleNo,
+            vehicleType,
+            mobile,
+            paymentMethod,
+            days,
+            amount,
+            user: JSON.parse(user || ""),
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
 }));
 
 export default userAuthStore;
