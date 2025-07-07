@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../../global.css";
 import {
   StatusBar,
@@ -9,9 +9,14 @@ import {
 } from "react-native";
 import CheckIn from "@/components/CheckIn";
 import CheckOut from "@/components/CheckOut";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Index = () => {
   const [isCheck, setIsCheck] = useState(true);
+  const [user, setUser] = useState({});
+  useEffect(() => {
+    setUser(AsyncStorage.getItem("user"));
+  }, []);
 
   return (
     <>
@@ -23,7 +28,7 @@ const Index = () => {
       <View className="bg-green-100 py-4 flex-1 px-4">
         <View className="">
           <View className="border border-white  rounded-sm bg-white p-2">
-            <Text className="text-2xl mb-5 text-[#111827]">Hey, Gowtham</Text>
+            <Text className="text-2xl mb-5 text-[#111827]">hey {user.id}</Text>
 
             <View className="flex-row justify-around ">
               <TouchableOpacity
