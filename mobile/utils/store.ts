@@ -17,6 +17,17 @@ type user = {
     username: string,
     password: string
   ) => Promise<{ success: boolean; error?: any }>;
+  updateProfile: (
+    id: string,
+    username: string,
+    newPassword?: string,
+    avatar?: string,
+    oldPassword?: string
+  ) => Promise<{ success: boolean; error?: any }>;
+  createStaff: (
+    username: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
   checkIn: (
     name: string,
@@ -31,7 +42,7 @@ type user = {
   checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
 };
 
-const userAuthStore = create<user>((set) => ({
+const userAuthStore = create<user>((set, get) => ({
   user: null,
   token: null,
   Reciept: {},
@@ -42,7 +53,7 @@ const userAuthStore = create<user>((set) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/register",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
         {
           method: "POST",
           headers: {
@@ -71,11 +82,12 @@ const userAuthStore = create<user>((set) => ({
       return { success: false, error: error.message };
     }
   },
+
   login: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/loginUser",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
         {
           method: "POST",
           headers: {
@@ -87,14 +99,17 @@ const userAuthStore = create<user>((set) => ({
           }),
         }
       );
-
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Login failed");
 
-      if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
+      const correctedUser = {
+        ...data.user,
+        _id: data.user._id || data.user.id,
+        role: data.user.role || "user",
+      };
 
       const responsePrice = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/getPrices",
         {
           method: "get",
           headers: {
@@ -106,13 +121,13 @@ const userAuthStore = create<user>((set) => ({
 
       const data1 = await responsePrice.json();
 
-      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+      await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
       await AsyncStorage.setItem("prices", JSON.stringify(data1.vehicle));
       await AsyncStorage.setItem("token", data.token);
 
       set({
+        user: correctedUser,
         token: data.token,
-        user: data.user,
         prices: data1.vehicle,
         isLoading: false,
         isLogged: true,
@@ -125,86 +140,85 @@ const userAuthStore = create<user>((set) => ({
     }
   },
 
-  logOut: async () => {
-    await AsyncStorage.removeItem("user");
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("prices");
-    await AsyncStorage.clear();
-    set({ token: null, user: null, prices: {}, isLogged: false });
-  },
-
-  checkIn: async (
-    name,
-    vehicleNo,
-    vehicleType,
-    mobile,
-    paymentMethod,
-    days,
-    amount,
-    perDayRate
+  updateProfile: async (
+    id: string,
+    username: string,
+    newPassword: string,
+    avatar: string,
+    oldPassword: string
   ) => {
     set({ isLoading: true });
     try {
-      const user = await AsyncStorage.getItem("user");
-      const token = await AsyncStorage.getItem("token");
+      const token = get().token || (await AsyncStorage.getItem("token"));
+
+      const updateBody: any = { username, oldPassword };
+      if (newPassword) updateBody.password = newPassword;
+      if (avatar) updateBody.avatar = avatar;
+
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkin",
+        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateBody),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Update failed");
+
+      await AsyncStorage.setItem("user", JSON.stringify(data.admin));
+      set({ user: data.admin, isLoading: false });
+
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+
+  createStaff: async (username: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const currentUser =
+        get().user || JSON.parse((await AsyncStorage.getItem("user")) || "{}");
+
+      const adminId = (currentUser as any)?._id;
+      if (!adminId) throw new Error("Admin ID not found");
+
+      const response = await fetch(
+        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/create/${adminId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            name,
-            vehicleNo,
-            vehicleType,
-            mobile,
-            paymentMethod,
-            days,
-            amount,
-            perDayRate,
-            user: JSON.parse(user || ""),
-          }),
+          body: JSON.stringify({ username, password }),
         }
       );
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
+        throw new Error(data.message || "Staff creation failed");
 
+      set({ isLoading: false });
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
       return { success: false, error: error.message };
     }
   },
-  checkOut: async (tokenId: string) => {
-    set({ isLoading: true });
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkout",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tokenId,
-          }),
-        }
-      );
-      const data = await response.json();
 
-      set({ Reciept: data });
-
-      return { success: true };
-    } catch (error: any) {
-      set({ isLoading: false });
-      return { success: false, error: error.message };
-    }
+  logOut: async () => {
+    await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("prices");
+    set({ token: null, user: null, prices: {}, isLogged: false });
   },
 }));
 
