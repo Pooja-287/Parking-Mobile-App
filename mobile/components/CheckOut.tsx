@@ -1,21 +1,40 @@
 import React, { useState } from "react";
 import "../app/global.css";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Text, View, TextInput, TouchableOpacity } from "react-native";
+import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
 import Scan from "./Scan";
+import userAuthStore from "@/utils/store";
 
 const CheckOut = () => {
   const [Toscan, setToscan] = useState(false);
-  const [TId, setTId] = useState("");
+  const [tokenId, settokenId] = useState("");
+  const { checkOut } = userAuthStore();
+
+  const handleSubmit = async () => {
+    if (!tokenId) {
+      Alert.alert("Enter the Token Id");
+      return;
+    }
+
+    const result = await checkOut(tokenId);
+
+    if (!result.success) {
+      Alert.alert("Error", result.error || "Check-in failed");
+      return;
+    }
+
+    Alert.alert("✅ Success", "Vehicle checked Out");
+  };
+
   return (
     <View className="gap-5">
       <Text className="text-2xl">Check Out</Text>
       <View className="py-2 bg-white flex-row rounded-sm justify-center items-center">
         <TextInput
           placeholder="Vehicle No"
-          value={TId}
-          onChangeText={(text) => setTId(text)}
-          className="rounded-sm px-2 h-14 flex-1 bg-blue-100"
+          value={tokenId}
+          onChangeText={(text) => settokenId(text)}
+          className="rounded-sm text-xl px-2 h-14 flex-1 bg-blue-100"
         />
 
         <Ionicons
@@ -31,14 +50,17 @@ const CheckOut = () => {
         {Toscan ? (
           <Scan
             onScanned={(data) => {
-              setTId(data);
+              settokenId(data);
               setToscan(!Toscan);
             }}
           />
         ) : null}
       </View>
       <View className="justify-center items-center">
-        <TouchableOpacity className="bg-green-500 p-3 px-10">
+        <TouchableOpacity
+          className="bg-green-500 p-3 px-10"
+          onPress={handleSubmit}
+        >
           <Text className="text-xl">Enter</Text>
         </TouchableOpacity>
       </View>

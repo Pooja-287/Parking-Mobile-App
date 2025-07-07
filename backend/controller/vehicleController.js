@@ -73,6 +73,8 @@ const Checkin = async (req, res) => {
       mobile,
       paymentMethod,
       days,
+      perDayRate: amount,
+      paidDays: days,
       amount,
       adminId,
       checkInBy,
@@ -115,7 +117,7 @@ const Checkout = async (req, res) => {
     if (vehicle.isCheckOut) {
       return res.status(400).json({
         message: "Vehicle is already checked out",
-        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
+        exitTimeIST: String(vehicle.CheckOutTime),
       });
     }
 
@@ -140,7 +142,7 @@ const Checkout = async (req, res) => {
     vehicle.totalDays = totalDays;
     vehicle.extraDays = extraDays;
     vehicle.extraAmount = extraAmount;
-    vehicle.checkedOutBy = userId;
+    vehicle.checkOutBy = userId;
 
     await vehicle.save();
 
@@ -153,8 +155,8 @@ const Checkout = async (req, res) => {
         user: userId,
         vehicleNumber: vehicle.vehicleNo,
         vehicleType: vehicle.vehicleType,
-        entryTime: convertToISTString(vehicle.entryDateTime),
-        exitTime: convertToISTString(vehicle.CheckOutTime),
+        entryTime: String(vehicle.entryDateTime),
+        exitTime: String(vehicle.CheckOutTime),
         paidDays: initialPaidDays,
         totalStayedDays: totalDays,
         extraDays,

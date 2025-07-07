@@ -53,7 +53,7 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/register",
         {
           method: "POST",
           headers: {
@@ -87,7 +87,7 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/loginUser",
         {
           method: "POST",
           headers: {
@@ -109,7 +109,7 @@ const userAuthStore = create<user>((set, get) => ({
       };
 
       const responsePrice = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/getPrices",
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
         {
           method: "get",
           headers: {
@@ -156,7 +156,7 @@ const userAuthStore = create<user>((set, get) => ({
       if (avatar) updateBody.avatar = avatar;
 
       const response = await fetch(
-        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
+        `https://q8dcnx0t-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
         {
           method: "PUT",
           headers: {
@@ -191,7 +191,7 @@ const userAuthStore = create<user>((set, get) => ({
       if (!adminId) throw new Error("Admin ID not found");
 
       const response = await fetch(
-        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/create/${adminId}`,
+        `https://q8dcnx0t-5000.inc1.devtunnels.ms/api/create/${adminId}`,
         {
           method: "POST",
           headers: {
@@ -258,6 +258,33 @@ const userAuthStore = create<user>((set, get) => ({
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
 
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+  checkOut: async (tokenId) => {
+    set({ isLoading: true });
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tokenId,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+      set({ prices: data });
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });

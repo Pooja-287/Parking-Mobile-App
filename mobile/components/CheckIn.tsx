@@ -65,19 +65,19 @@ const CheckIn = () => {
   return (
     <View className="gap-5 p-4">
       <Text className="text-2xl font-bold text-blue-800">Check In</Text>
-      <View className="bg-white rounded-lg shadow-md p-4 space-y-4">
+      <View className="bg-white rounded-lg shadow-md p-4 gap-3 space-y-4">
         <TextInput
           placeholder="Name"
           value={name}
           onChangeText={setName}
-          className="rounded px-3 h-12 bg-blue-100"
+          className="rounded text-xl px-3 h-12 bg-blue-100"
         />
 
         <TextInput
           placeholder="Vehicle Number"
           value={vehicleNo}
           onChangeText={setVehicleNo}
-          className="rounded px-3 h-12 bg-blue-100"
+          className="rounded text-xl px-3 h-12 bg-blue-100"
         />
 
         <Picker
@@ -96,10 +96,14 @@ const CheckIn = () => {
           value={mobile}
           onChangeText={setMobile}
           keyboardType="number-pad"
-          className="rounded px-3 h-12 bg-blue-100"
+          className="rounded text-xl px-3 h-12 bg-blue-100"
         />
 
-        <Picker selectedValue={days} onValueChange={(val) => setDays(val)}>
+        <Picker
+          style={{ height: 52, backgroundColor: "#DBEAFE" }}
+          selectedValue={days}
+          onValueChange={(val) => setDays(val)}
+        >
           {[...Array(7)].map((_, i) => (
             <Picker.Item
               key={i + 1}
