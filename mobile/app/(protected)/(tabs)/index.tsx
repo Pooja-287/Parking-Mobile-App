@@ -15,7 +15,13 @@ const Index = () => {
   const [isCheck, setIsCheck] = useState(true);
   const [user, setUser] = useState({});
   useEffect(() => {
-    setUser(AsyncStorage.getItem("user"));
+    const fetchUser = async () => {
+      const userData = await AsyncStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    };
+    fetchUser();
   }, []);
 
   return (
