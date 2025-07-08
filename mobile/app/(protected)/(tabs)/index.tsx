@@ -33,7 +33,7 @@ const Index = () => {
       />
       <View className="bg-green-100 py-4 flex-1 px-4">
         <View className="">
-          <View className="border border-white  rounded-sm bg-white p-2">
+          <View className="border border-white shadow-lg  rounded-sm bg-white p-2">
             <Text className="text-2xl mb-5 text-[#111827]">
               hey {user?.username}
             </Text>

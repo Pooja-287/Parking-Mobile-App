@@ -41,7 +41,10 @@ type user = {
   ) => Promise<{ success: boolean; error?: any }>;
   checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
   loadPricesIfNotSet: () => Promise<void>;
+  vehicleList: (vehicle: string) => Promise<{ success: boolean; error?: any }>;
 };
+
+const URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
 
 const userAuthStore = create<user>((set, get) => ({
   user: null,
@@ -62,20 +65,17 @@ const userAuthStore = create<user>((set, get) => ({
   signup: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            email,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -96,19 +96,16 @@ const userAuthStore = create<user>((set, get) => ({
   login: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/loginUser`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Login failed");
 
@@ -118,16 +115,13 @@ const userAuthStore = create<user>((set, get) => ({
         role: data.user.role || "user",
       };
 
-      const responsePrice = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/getPrices",
-        {
-          method: "get",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-        }
-      );
+      const responsePrice = await fetch(`${URL}api/getPrices`, {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
 
       const data1 = await responsePrice.json();
 
@@ -158,17 +152,14 @@ const userAuthStore = create<user>((set, get) => ({
       if (newPassword) updateBody.password = newPassword;
       if (avatar) updateBody.avatar = avatar;
 
-      const response = await fetch(
-        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updateBody),
-        }
-      );
+      const response = await fetch(`${URL}api/updateAdmin/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateBody),
+      });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Update failed");
@@ -193,17 +184,14 @@ const userAuthStore = create<user>((set, get) => ({
       const adminId = (currentUser as any)?._id;
       if (!adminId) throw new Error("Admin ID not found");
 
-      const response = await fetch(
-        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/create/${adminId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
+      const response = await fetch(`${URL}api/create/${adminId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
       const data = await response.json();
       if (!response.ok)
@@ -236,26 +224,23 @@ const userAuthStore = create<user>((set, get) => ({
     try {
       const user = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkin",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name,
-            vehicleNo,
-            vehicleType,
-            mobile,
-            paymentMethod,
-            days,
-            amount,
-            user: JSON.parse(user || ""),
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/checkin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          vehicleNo,
+          vehicleType,
+          mobile,
+          paymentMethod,
+          days,
+          amount,
+          user: JSON.parse(user || ""),
+        }),
+      });
 
       const data = await response.json();
       if (!response.ok)
@@ -271,24 +256,46 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkout",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tokenId,
-          }),
-        }
-      );
+      const user = await AsyncStorage.getItem("user");
+      const response = await fetch(`${URL}api/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tokenId,
+          user: JSON.parse(user || ""),
+        }),
+      });
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
       set({ prices: data });
       return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+  vehicleList: async (vehicle: string) => {
+    set({ isLoading: true });
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(`${URL}api/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehicle,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+      return { success: true, data: data.checkins };
     } catch (error: any) {
       set({ isLoading: false });
       return { success: false, error: error.message };
