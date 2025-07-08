@@ -1,12 +1,14 @@
-import { Text, View } from "react-native";
-import React from "react";
+import { StyleSheet, Text, View } from 'react-native'
+import React from 'react'
 
-const staffs = () => {
+const updateScreen = () => {
   return (
-    <View className="flex-1">
+    <View>
       <Text>updateScreen</Text>
     </View>
-  );
-};
+  )
+}
 
-export default staffs;
+export default updateScreen
+
+const styles = StyleSheet.create({})
