@@ -5,7 +5,7 @@
 //     try {
 //     const{ name, vehicleNumber, mobileNumber, startDate, endDate, amount, paymentMode } = req.body;
 //     const pass = new monthlyPass({
-//         name,
+//         name, 
 //         vehicleNumber: vehicleNumber.toUpperCase().replace(/\s/g,''),
 //         mobileNumber,
 //         startDate,
@@ -18,7 +18,7 @@
 //     await pass.save();
 
 //     await sendWhatsAppTemplate(mobileNumber, 'monthly Pass Created', [
-//         name,
+//         name, 
 //         vehicleNumber,
 //         new Date(startDate).toDateString(),
 //         new Date(endDate).toDateString()
@@ -40,6 +40,7 @@
 //         const newEndDate = new Date(pass.endDate);
 //         newEndDate.setMonth(newEndDate.getMonth() + parseInt(monthsToAdd));
 
+
 //         pass.endDate = newEndDate;
 //         pass.amount += amount;
 //         pass.paymentMode = paymentMode;
@@ -60,10 +61,14 @@
 //     }
 // }
 
+
 // export default {
 //   createMonthlyPass,
 //   renewMonthlyPass
 // };
+
+
+
 
 import monthlyPass from "../model/monthlyPass.js";
 // import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";

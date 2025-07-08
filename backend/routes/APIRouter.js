@@ -81,7 +81,7 @@ router.delete(
   verifyToken,
   userController.deleteAdmin
 );
-router.post("/api/addPrice", verifyToken, userController.addPrice);
+router.post("/api/addPrice/:adminId", verifyToken, userController.addPrice);
 router.put("/api/updatePrice", verifyToken, userController.updatePrice);
 router.get("/api/getPrices", verifyToken, userController.getPrice);
 

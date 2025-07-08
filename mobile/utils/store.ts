@@ -63,7 +63,7 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/register",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
         {
           method: "POST",
           headers: {
@@ -97,7 +97,7 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/loginUser",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
         {
           method: "POST",
           headers: {
@@ -119,7 +119,7 @@ const userAuthStore = create<user>((set, get) => ({
       };
 
       const responsePrice = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/getPrices",
         {
           method: "get",
           headers: {
@@ -159,7 +159,7 @@ const userAuthStore = create<user>((set, get) => ({
       if (avatar) updateBody.avatar = avatar;
 
       const response = await fetch(
-        `https://q8dcnx0t-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
+        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/updateAdmin/${id}`,
         {
           method: "PUT",
           headers: {
@@ -194,7 +194,7 @@ const userAuthStore = create<user>((set, get) => ({
       if (!adminId) throw new Error("Admin ID not found");
 
       const response = await fetch(
-        `https://q8dcnx0t-5000.inc1.devtunnels.ms/api/create/${adminId}`,
+        `https://kj8cjmpw-5000.inc1.devtunnels.ms/api/create/${adminId}`,
         {
           method: "POST",
           headers: {
@@ -237,7 +237,7 @@ const userAuthStore = create<user>((set, get) => ({
       const user = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem("token");
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkin",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkin",
         {
           method: "POST",
           headers: {
@@ -267,12 +267,12 @@ const userAuthStore = create<user>((set, get) => ({
       return { success: false, error: error.message };
     }
   },
-  checkOut: async (tokenId) => {
+  checkOut: async (tokenId: any) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/checkout",
+        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkout",
         {
           method: "POST",
           headers: {

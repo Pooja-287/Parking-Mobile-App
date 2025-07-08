@@ -40,60 +40,6 @@ const createStaff = async (req, res) => {
 
 
 
-
-// // 🔐 Staff Login
-// const staffLogin = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
-
-//     // 1. Check if both username and password are provided
-//     if (!username || !password) {
-//       return res.status(400).json({ message: "Username and password are required" });
-//     }
-
-//     // 2. Find the staff by username
-//     const staff = await Staff.findOne({ username });
-//     if (!staff) {
-//       return res.status(401).json({ message: "Invalid username or password" });
-//     }
-
-//     // 3. Compare passwords (in production, use bcrypt.compare)
-//     if (staff.password !== password) {
-//       return res.status(401).json({ message: "Invalid username or password" });
-//     }
-
-//     // 4. Generate JWT token
-//     const token = jwt.sign(
-//       { _id: staff._id, role: 'staff' }, // payload
-//       process.env.SECRET_KEY || 'your_secret_key', // secret key
-//       { expiresIn: '1d' } // token expiry
-//     );
-
-//     // 5. Send token and staff info (excluding password)
-//     res.status(200).json({
-//       message: "Login successful",
-//       token,
-//       staff: {
-//         _id: staff._id,
-//         username: staff.username,
-//         password: staff.password,
-//         role: staff.role
-//       }
-//     });
-
-//   } catch (error) {
-//     res.status(500).json({ message: "Login failed", error: error.message });
-//   }
-// };
-
-
-
-
-
-
-
-
-
 // 👀 Admin: View all staff
 const getAllStaffs = async (req, res) => {
   try {
@@ -145,11 +91,6 @@ const getStaffTodayRevenue = async (req, res) => {
   }
 };
 
-
-
-
-
-
 // 🛠️ Update staff info (admin only)
 const updateStaff = async (req, res) => {
   try {
@@ -169,7 +110,6 @@ const updateStaff = async (req, res) => {
   }
 };
     
-
 const deleteStaff = async (req, res) => {
   try {
     const { staffId } = req.params;

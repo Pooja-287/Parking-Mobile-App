@@ -43,16 +43,18 @@ const AccountSettings = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* Create Staff Button */}
-      <TouchableOpacity
-        className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow"
-        onPress={() => router.push("/createStaffScreen")}
-      >
-        <Ionicons name="person-add-outline" size={30} color="#2d6a4f" />
-        <Text className="ml-3 text-xl font-semibold text-green-800">
-          Create Staff
-        </Text>
-      </TouchableOpacity>
+      {/* Staff List Button */}
+<TouchableOpacity
+  className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
+  onPress={() => router.push("/staffPage")} // ✅ correct path
+>
+  <Ionicons name="people-outline" size={30} color="#2d6a4f" />
+  <Text className="ml-3 text-xl font-semibold text-green-800">
+    Staff List
+  </Text>
+</TouchableOpacity>
+
+
     </SafeAreaView>
   );
 };

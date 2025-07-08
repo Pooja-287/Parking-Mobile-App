@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import userAuthStore from "../../../utils/store"; // adjust path as needed
+import userAuthStore from "../../utils/store"; // adjust path as needed
 
 const CreateStaffScreen = () => {
   const [username, setUsername] = useState("");
@@ -47,16 +47,16 @@ const CreateStaffScreen = () => {
         >
           <Text className="text-2xl font-bold mb-6">Create Staff</Text>
 
-          <Text className="mb-2">Username</Text>
+          <Text className="text-lg text-gray-700 mb-2">Username</Text>
           <TextInput
             value={username}
             onChangeText={setUsername}
-            className="border border-gray-300 rounded-lg px-4 py-2 mb-4"
+            className="flex-row  items-center border border-gray-300 bg-blue-100 rounded-sm mb-6"
             placeholder="Enter username"
           />
 
-          <Text className="mb-2">Password</Text>
-          <View className="border border-gray-300 rounded-lg px-4 py-2 mb-4 flex-row items-center justify-between">
+          <Text className="text-lg text-gray-700 mb-2">Password</Text>
+          <View className="flex-row  items-center border border-gray-300 bg-blue-100 rounded-sm mb-6">
             <TextInput
               value={password}
               onChangeText={setPassword}
@@ -76,12 +76,12 @@ const CreateStaffScreen = () => {
           <TouchableOpacity
             onPress={handleCreateStaff}
             disabled={isLoading}
-            className="bg-green-600 py-3 rounded-lg items-center"
+            className="bg-green-600 py-3  w-36 self-center items-center"
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-white text-lg font-semibold">
+              <Text className="text-black text-lg font-bold">
                 Create Staff
               </Text>
             )}
