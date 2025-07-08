@@ -20,16 +20,15 @@ type user = {
   updateProfile: (
     id: string,
     username: string,
-    newPassword?: string | undefined,
-    avatar?: string | undefined,
-    oldPassword?: string | undefined
+    newPassword?: string,
+    avatar?: string,
+    oldPassword?: string
   ) => Promise<{ success: boolean; error?: any }>;
   createStaff: (
     username: string,
     password: string
   ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
-  getPrice: () => Promise<{ success: boolean; error?: any }>;
   checkIn: (
     name: string,
     vehicleNo: string,
@@ -109,43 +108,31 @@ const userAuthStore = create<user>((set, get) => ({
         role: data.user.role || "user",
       };
 
-      await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-      await AsyncStorage.setItem("token", data.token);
-
-      set({
-        user: correctedUser,
-        token: data.token,
-        isLoading: false,
-        isLogged: true,
-      });
-
-      return { success: true };
-    } catch (error: any) {
-      set({ isLoading: false });
-      return { success: false, error: error.message };
-    }
-  },
-
-  getPrice: async () => {
-    set({ isLoading: true });
-    try {
-      const data = await AsyncStorage.getItem("token");
       const responsePrice = await fetch(
         "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
         {
           method: "get",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${data}`,
+            Authorization: `Bearer ${data.token}`,
           },
         }
       );
 
-      const result = await responsePrice.json();
-      if (!result.ok)
-        throw new Error(result.message || "price fetching failed");
+      const data1 = await responsePrice.json();
 
-      set({ prices: result.data });
+      await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
+      await AsyncStorage.setItem("prices", JSON.stringify(data1.vehicle));
+      await AsyncStorage.setItem("token", data.token);
+
+      set({
+        user: correctedUser,
+        token: data.token,
+        prices: data1.vehicle,
+        isLoading: false,
+        isLogged: true,
+      });
+
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
