@@ -1,5 +1,5 @@
 // index.js
-import "./cron/sendExpiryReminders.js"
+// import "./cron/sendExpiryReminders.js"
 
 import express from "express";
 import APIRouter from "./routes/APIRouter.js";
@@ -7,7 +7,6 @@ import mongoose from "mongoose";
 import morgan from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
-
 
 dotenv.config();
 
@@ -39,6 +38,3 @@ ConnectDB();
 app.listen(PORT, () => {
   console.log("Server is Running on Port", PORT);
 });
-
-
-
