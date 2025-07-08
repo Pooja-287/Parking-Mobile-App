@@ -224,7 +224,7 @@ const UpdateProfile = () => {
             </View>
 
             <Text className="text-lg text-gray-700 mb-2">New Password</Text>
-            <View className="flex-row px-4 py-2 items-center border border-gray-300 bg-blue-100 rounded-sm mb-6">
+            <View className="flex-row  items-center border border-gray-300 bg-blue-100 rounded-sm mb-6">
               <TextInput
                 placeholder="Enter new password"
                 secureTextEntry={!showNewPassword}

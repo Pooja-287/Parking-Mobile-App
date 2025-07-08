@@ -45,7 +45,7 @@ const vehicleCheckinSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    isCheckOut: {
+    isCheckedOut: {
       type: Boolean,
       default: false,
     },
