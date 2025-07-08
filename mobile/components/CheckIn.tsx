@@ -16,7 +16,7 @@ const CheckIn = () => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [days, setDays] = useState("1");
 
-  const { prices, checkIn } = useAuthStore();
+  const { prices, checkIn, getPrice } = useAuthStore();
   const typedPrices = prices as VehiclePrices;
   const [amount, setAmount] = useState(0);
 
@@ -35,6 +35,10 @@ const CheckIn = () => {
     const rate = typedPrices[vehicleType] || 0;
     setAmount(rate * Number(days));
   }, [days, vehicleType, typedPrices]);
+
+  useEffect(() => {
+    getPrice();
+  });
 
   const handleSubmit = async () => {
     if (!name || !vehicleNo || !mobile) {

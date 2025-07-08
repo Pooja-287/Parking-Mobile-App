@@ -20,15 +20,16 @@ type user = {
   updateProfile: (
     id: string,
     username: string,
-    newPassword?: string,
-    avatar?: string,
-    oldPassword?: string
+    newPassword?: string | undefined,
+    avatar?: string | undefined,
+    oldPassword?: string | undefined
   ) => Promise<{ success: boolean; error?: any }>;
   createStaff: (
     username: string,
     password: string
   ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
+  getPrice: () => Promise<{ success: boolean; error?: any }>;
   checkIn: (
     name: string,
     vehicleNo: string,
@@ -108,27 +109,12 @@ const userAuthStore = create<user>((set, get) => ({
         role: data.user.role || "user",
       };
 
-      const responsePrice = await fetch(
-        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
-        {
-          method: "get",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-        }
-      );
-
-      const data1 = await responsePrice.json();
-
       await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-      await AsyncStorage.setItem("prices", JSON.stringify(data1.vehicle));
       await AsyncStorage.setItem("token", data.token);
 
       set({
         user: correctedUser,
         token: data.token,
-        prices: data1.vehicle,
         isLoading: false,
         isLogged: true,
       });
@@ -140,13 +126,34 @@ const userAuthStore = create<user>((set, get) => ({
     }
   },
 
-  updateProfile: async (
-    id: string,
-    username: string,
-    newPassword: string,
-    avatar: string,
-    oldPassword: string
-  ) => {
+  getPrice: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await AsyncStorage.getItem("token");
+      const responsePrice = await fetch(
+        "https://q8dcnx0t-5000.inc1.devtunnels.ms/api/getPrices",
+        {
+          method: "get",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data}`,
+          },
+        }
+      );
+
+      const result = await responsePrice.json();
+      if (!result.ok)
+        throw new Error(result.message || "price fetching failed");
+
+      set({ prices: result.data });
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+
+  updateProfile: async (id, username, newPassword, avatar, oldPassword) => {
     set({ isLoading: true });
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
