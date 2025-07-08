@@ -5,6 +5,7 @@ type user = {
   user: string | null;
   token: string | null;
   prices: object | undefined;
+  VehicleListData: ArrayLike<any> | null | undefined;
   Reciept: object;
   isLoading: boolean;
   isLogged: boolean;
@@ -41,7 +42,10 @@ type user = {
   ) => Promise<{ success: boolean; error?: any }>;
   checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
   loadPricesIfNotSet: () => Promise<void>;
-  vehicleList: (vehicle: string) => Promise<{ success: boolean; error?: any }>;
+  vehicleList: (
+    vehicle: string,
+    checkType: string
+  ) => Promise<{ success: boolean; error?: any }>;
 };
 
 const URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
@@ -51,6 +55,7 @@ const userAuthStore = create<user>((set, get) => ({
   token: null,
   Reciept: {},
   prices: {},
+  VehicleListData: [],
   isLogged: false,
   isLoading: false,
   loadPricesIfNotSet: async () => {
@@ -278,11 +283,11 @@ const userAuthStore = create<user>((set, get) => ({
       return { success: false, error: error.message };
     }
   },
-  vehicleList: async (vehicle: string) => {
+  vehicleList: async (vehicle: string, checkType: string) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(`${URL}api/checkout`, {
+      const response = await fetch(`${URL}api/${checkType}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -295,7 +300,8 @@ const userAuthStore = create<user>((set, get) => ({
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Something went wrong!!");
-      return { success: true, data: data.checkins };
+      set({ VehicleListData: data.vehicle });
+      return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
       return { success: false, error: error.message };

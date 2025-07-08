@@ -247,7 +247,7 @@ const getCheckins = async (req, res) => {
 
     res.status(200).json({
       count: checkins.length,
-      checkins,
+      vehicle: checkins,
     });
   } catch (error) {
     console.error("getCheckins error:", error);
@@ -260,15 +260,26 @@ const getCheckins = async (req, res) => {
 const getCheckouts = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { vehicle } = req.body;
 
-    const checkouts = await VehicleCheckin.find({
-      isCheckedOut: true,
-      createdBy: userId,
-    }).sort({ exitDateTime: -1 });
+    let checkouts;
+
+    if (vehicle === "all") {
+      checkouts = await VehicleCheckin.find({
+        isCheckedOut: true,
+        checkInBy: userId,
+      }).sort({ exitDateTime: -1 });
+    } else {
+      checkouts = await VehicleCheckin.find({
+        vehicleType: vehicle,
+        isCheckedOut: true,
+        checkInBy: userId,
+      }).sort({ exitDateTime: -1 });
+    }
 
     res.status(200).json({
       count: checkouts.length,
-      checkouts,
+      vehicle: checkouts,
     });
   } catch (error) {
     console.error("getCheckouts error:", error);
@@ -283,7 +294,7 @@ const getVehicleList = async (req, res) => {
     const { isCheckedOut, vehicleType, numberPlate } = req.query;
     const userId = req.user._id;
 
-    const query = { createdBy: userId }; // 👈 Only vehicles created by this user
+    const query = { createdBy: userId };
 
     if (isCheckedOut === "true") query.isCheckedOut = true;
     else if (isCheckedOut === "false") query.isCheckedOut = false;
