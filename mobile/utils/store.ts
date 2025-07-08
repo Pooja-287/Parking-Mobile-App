@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type user = {
   user: string | null;
   token: string | null;
-  prices: object;
+  prices: object | undefined;
   Reciept: object;
   isLoading: boolean;
   isLogged: boolean;
@@ -40,6 +40,7 @@ type user = {
     perDayRate: string
   ) => Promise<{ success: boolean; error?: any }>;
   checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
+  loadPricesIfNotSet: () => Promise<void>;
 };
 
 const userAuthStore = create<user>((set, get) => ({
@@ -49,6 +50,15 @@ const userAuthStore = create<user>((set, get) => ({
   prices: {},
   isLogged: false,
   isLoading: false,
+  loadPricesIfNotSet: async () => {
+    const currentPrices = get().prices;
+    if (!currentPrices || Object.keys(currentPrices).length === 0) {
+      const storedPrices = await AsyncStorage.getItem("prices");
+      if (storedPrices) {
+        set({ prices: JSON.parse(storedPrices) });
+      }
+    }
+  },
   signup: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
@@ -122,7 +132,6 @@ const userAuthStore = create<user>((set, get) => ({
       const data1 = await responsePrice.json();
 
       await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-      await AsyncStorage.setItem("prices", JSON.stringify(data1.vehicle));
       await AsyncStorage.setItem("token", data.token);
 
       set({

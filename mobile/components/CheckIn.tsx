@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
 import useAuthStore from "../utils/store";
@@ -16,9 +16,22 @@ const CheckIn = () => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [days, setDays] = useState("1");
 
-  const { prices, checkIn } = useAuthStore();
-  const typedPrices = prices as VehiclePrices;
+  const { prices, checkIn, loadPricesIfNotSet } = useAuthStore();
+
+  const typedPrices = useMemo(() => {
+    return (prices || {}) as VehiclePrices;
+  }, [prices]);
+
   const [amount, setAmount] = useState(0);
+
+  useEffect(() => {
+    loadPricesIfNotSet();
+  }, [loadPricesIfNotSet]);
+
+  useEffect(() => {
+    const rate = typedPrices[vehicleType] || 0;
+    setAmount(rate * Number(days));
+  }, [days, vehicleType, typedPrices]);
 
   const clearForm = () => {
     setName("");
@@ -29,12 +42,6 @@ const CheckIn = () => {
     setDays("1");
     setAmount(0);
   };
-
-  // Calculate amount based on type × days
-  useEffect(() => {
-    const rate = typedPrices[vehicleType] || 0;
-    setAmount(rate * Number(days));
-  }, [days, vehicleType, typedPrices]);
 
   const handleSubmit = async () => {
     if (!name || !vehicleNo || !mobile) {
@@ -58,13 +65,13 @@ const CheckIn = () => {
       return;
     }
 
-    Alert.alert("✅ Success", "Vehicle checked in");
+    Alert.alert(" Success", "Vehicle checked in");
     clearForm();
   };
 
   return (
     <View className="gap-5 p-4">
-      <Text className="text-2xl font-bold text-blue-800">Check In</Text>
+      <Text className="text-2xl font-bold">Check In</Text>
       <View className="bg-white rounded-lg shadow-md p-4 gap-3 space-y-4">
         <TextInput
           placeholder="Name"
