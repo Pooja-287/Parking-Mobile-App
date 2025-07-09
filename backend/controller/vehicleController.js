@@ -19,7 +19,14 @@ const Checkin = async (req, res) => {
     } = req.body;
 
     // ✅ Validate required fields
-    if (!vehicleType || !vehicleNo || !mobile || !paymentMethod || !days || !amount) {
+    if (
+      !vehicleType ||
+      !vehicleNo ||
+      !mobile ||
+      !paymentMethod ||
+      !days ||
+      !amount
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -31,7 +38,6 @@ const Checkin = async (req, res) => {
       });
     }
 
-    // ✅ Determine who is checking in: admin or staff
     const userRole = user.role;
     const checkInBy = user.id;
     let adminId = "";
@@ -91,7 +97,9 @@ const Checkin = async (req, res) => {
     });
   } catch (error) {
     console.error("Check-in error:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -105,17 +113,22 @@ const formatTimeOnly = (date) => {
 
 const Checkout = async (req, res) => {
   try {
-    const { tokenId } = req.body;
+    const { tokenId, user } = req.body;
     const userId = req.user.username;
 
     if (!tokenId) {
       return res.status(400).json({ message: "tokenId is required" });
     }
+    if (!user) {
+      return res.status(400).json({ message: "User is required" });
+    }
 
     const vehicle = await VehicleCheckin.findOne({ tokenId });
 
     if (!vehicle) {
-      return res.status(404).json({ message: "No check-in found with this tokenId" });
+      return res
+        .status(404)
+        .json({ message: "No check-in found with this tokenId" });
     }
 
     if (vehicle.isCheckOut) {
@@ -128,12 +141,32 @@ const Checkout = async (req, res) => {
     const exitTime = new Date();
     const entryTime = new Date(vehicle.entryDateTime);
     const timeDiffMs = exitTime - entryTime;
+    const userRole = user.role;
+    const checkInBy = user.id;
+    let adminId = "";
 
-    const priceData = await Price.findOne({ vehicleType: vehicle.vehicleType });
+    if (userRole === "admin") {
+      adminId = checkInBy;
+    } else {
+      const staff = await Staff.findById(user.id);
+      if (!staff) {
+        return res.status(400).json({ message: "Staff not found" });
+      }
+      adminId = staff.createdBy;
+    }
+
+    const priceData = await Price.findOne({ adminId: req.user._id });
+
     if (!priceData) {
+      return res.status(404).json({ message: "No pricing info found" });
+    }
+
+    const price = priceData.vehicle[vehicle.vehicleType];
+
+    if (!price) {
       return res
         .status(404)
-        .json({ message: `No pricing info found for ${vehicle.vehicleType}` });
+        .json({ message: `No price found for ${vehicle.vehicleType}` });
     }
 
     let totalAmount = 0;
@@ -162,7 +195,7 @@ const Checkout = async (req, res) => {
     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
     vehicle.isCheckedOut = true;
     vehicle.checkedOutBy = userId;
-    vehicle.checkedOutByRole = capitalize(userRole); // ✅ fixed
+    vehicle.checkedOutByRole = userRole;
 
     await vehicle.save();
 
@@ -192,21 +225,29 @@ const Checkout = async (req, res) => {
   }
 };
 
-
-
-
 const getCheckins = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { vehicle } = req.body;
 
-    const checkins = await VehicleCheckin.find({
-      isCheckedOut: false,
-      createdBy: userId,
-    }).sort({ entryDateTime: -1 });
+    let checkins;
+
+    if (vehicle === "all") {
+      checkins = await VehicleCheckin.find({
+        isCheckedOut: false,
+        checkInBy: userId,
+      }).sort({ entryDateTime: -1 });
+    } else {
+      checkins = await VehicleCheckin.find({
+        vehicleType: vehicle,
+        isCheckedOut: false,
+        checkInBy: userId,
+      }).sort({ entryDateTime: -1 });
+    }
 
     res.status(200).json({
       count: checkins.length,
-      checkins,
+      vehicle: checkins,
     });
   } catch (error) {
     console.error("getCheckins error:", error);
@@ -215,18 +256,30 @@ const getCheckins = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 const getCheckouts = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { vehicle } = req.body;
 
-    const checkouts = await VehicleCheckin.find({
-      isCheckedOut: true,
-      createdBy: userId,
-    }).sort({ exitDateTime: -1 });
+    let checkouts;
+
+    if (vehicle === "all") {
+      checkouts = await VehicleCheckin.find({
+        isCheckedOut: true,
+        checkInBy: userId,
+      }).sort({ exitDateTime: -1 });
+    } else {
+      checkouts = await VehicleCheckin.find({
+        vehicleType: vehicle,
+        isCheckedOut: true,
+        checkInBy: userId,
+      }).sort({ exitDateTime: -1 });
+    }
 
     res.status(200).json({
       count: checkouts.length,
-      checkouts,
+      vehicle: checkouts,
     });
   } catch (error) {
     console.error("getCheckouts error:", error);
@@ -241,7 +294,7 @@ const getVehicleList = async (req, res) => {
     const { isCheckedOut, vehicleType, numberPlate } = req.query;
     const userId = req.user._id;
 
-    const query = { createdBy: userId }; // 👈 Only vehicles created by this user
+    const query = { createdBy: userId };
 
     if (isCheckedOut === "true") query.isCheckedOut = true;
     else if (isCheckedOut === "false") query.isCheckedOut = false;

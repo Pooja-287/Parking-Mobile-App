@@ -59,7 +59,7 @@ const Login = () => {
         <Text className="text-4xl mb-3">Parkingz</Text>
       </View>
       <View className="w-full bg-white p-4 pt-5 rounded-2xl gap-8 shadow-md mt-5">
-        <View className="flex-1 items-center justify-center">
+        <View className="items-center justify-center">
           <Text className="text-2xl">Login</Text>
         </View>
 

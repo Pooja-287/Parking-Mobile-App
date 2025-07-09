@@ -11,8 +11,8 @@ const router = express.Router();
 // POST: Scan QR and perform checkout
 router.post("/api/checkin", verifyToken, vehicleController.Checkin);
 router.post("/api/checkout", verifyToken, vehicleController.Checkout);
-router.get("/api/checkins", verifyToken, vehicleController.getCheckins);
-router.get("/api/checkouts", verifyToken, vehicleController.getCheckouts);
+router.post("/api/checkins", verifyToken, vehicleController.getCheckins);
+router.post("/api/checkouts", verifyToken, vehicleController.getCheckouts);
 
 // New routes
 router.get(
