@@ -17,6 +17,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import userAuthStore from "../utils/store";
 import { Link } from "expo-router";
+import ToastManager, { Toast } from "toastify-react-native";
 
 const Login = () => {
   const [userName, setUserName] = useState("");
@@ -26,14 +27,25 @@ const Login = () => {
 
   const screenWidth = Dimensions.get("window").width;
 
-  // ✅ handleLogin without role navigation
   const handleLogin = async () => {
     const result = await login(userName, password);
     if (!result.success) {
-      Alert.alert("Login Failed", result.error || "Invalid credentials");
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2: result.error || "Invalid credentials",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     } else {
-      Alert.alert("Success", "Logged in successfully!");
-      // 🚫 No role check or redirect
+      Toast.show({
+        type: "success",
+        text1: "Login Successful",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     }
   };
 
@@ -134,6 +146,7 @@ const Login = () => {
       ) : (
         <View style={{ flex: 1 }}>{LoginForm()}</View>
       )}
+      <ToastManager showCloseIcon={false} />
     </SafeAreaView>
   );
 };

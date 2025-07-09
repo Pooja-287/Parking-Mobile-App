@@ -191,9 +191,9 @@ const VehicleList = () => {
         </View>
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
-          className="bg-blue-100 px-3 py-2 rounded shadow-sm"
+          className="bg-green-100 px-3 py-2 rounded shadow-sm"
         >
-          <Text className="text-sm text-blue-800">
+          <Text className="text-sm">
             {filterDate ? format(filterDate, "MMM dd, yyyy") : "Pick Date"}
           </Text>
         </TouchableOpacity>

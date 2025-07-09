@@ -192,7 +192,9 @@ const UpdateProfile = () => {
           </View>
 
           <View className="bg-white p-6 rounded-2xl shadow-sm">
-            <Text className="text-2xl font-bold text-center mb-6">Update Profile</Text>
+            <Text className="text-2xl font-bold text-center mb-6">
+              Update Profile
+            </Text>
 
             <Text className="text-lg text-gray-700 mb-2">Username</Text>
             <TextInput
