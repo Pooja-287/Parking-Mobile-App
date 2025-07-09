@@ -5,22 +5,21 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import userAuthStore from "../../utils/store";
-import Toast from "react-native-toast-message"; 
+import Toast from "react-native-toast-message";
+import userAuthStore from "@/utils/store"; 
 
-const CreateStaffScreen = () => {
+const CreateStaff = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { createStaff, isLoading } = userAuthStore();
+  const { createStaff, getAllStaffs, isLoading } = userAuthStore();
 
   const handleCreateStaff = async () => {
     if (!username || !password) {
@@ -36,6 +35,7 @@ const CreateStaffScreen = () => {
     const result = await createStaff(username, password);
 
     if (result.success) {
+      await getAllStaffs(); // ✅ Refresh staff list
       Toast.show({
         type: "success",
         text1: "Staff Created ✅",
@@ -43,6 +43,7 @@ const CreateStaffScreen = () => {
         position: "top",
         visibilityTime: 2500,
       });
+
       setUsername("");
       setPassword("");
     } else {
@@ -66,20 +67,15 @@ const CreateStaffScreen = () => {
             Create Staff
           </Text>
 
-          <Text className="text-lg text-gray-700 mb-2">
-            Username
-          </Text>
+          <Text className="text-lg text-gray-700 mb-2">Username</Text>
           <TextInput
-          placeholder="Enter username"
+            placeholder="Enter username"
             value={username}
             onChangeText={setUsername}
-            
-            className=" border border-blue-100 bg-blue-100 rounded-sm px-4 py-3 text-base mb-4"
+            className="border border-blue-100 bg-blue-100 rounded-sm px-4 py-3 text-base mb-4"
           />
 
-          <Text className="text-lg text-gray-700 mb-2">
-            Password
-          </Text>
+          <Text className="text-lg text-gray-700 mb-2">Password</Text>
           <View className="flex-row items-center border border-gray-300 px-3 bg-blue-100 rounded-sm mb-4">
             <TextInput
               value={password}
@@ -105,18 +101,15 @@ const CreateStaffScreen = () => {
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-black text-lg font-bold">
-                Create Staff
-              </Text>
+              <Text className="text-black text-lg font-bold">Create Staff</Text>
             )}
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </ScrollView>
 
-      {/* ✅ Toast */}
       <Toast />
     </SafeAreaView>
   );
 };
 
-export default CreateStaffScreen;
+export default CreateStaff;

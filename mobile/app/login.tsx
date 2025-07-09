@@ -26,9 +26,15 @@ const Login = () => {
 
   const screenWidth = Dimensions.get("window").width;
 
+  // ✅ handleLogin without role navigation
   const handleLogin = async () => {
     const result = await login(userName, password);
-    if (!result.success) Alert.alert("Error", result.error);
+    if (!result.success) {
+      Alert.alert("Login Failed", result.error || "Invalid credentials");
+    } else {
+      Alert.alert("Success", "Logged in successfully!");
+      // 🚫 No role check or redirect
+    }
   };
 
   const LoginForm = () => (

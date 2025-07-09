@@ -13,6 +13,10 @@ const staffSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  hashedPassword: {
+    type: String,
+    required: true    // actual secure password used for login
+  },
 
   role: {
     type: String,
