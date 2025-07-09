@@ -31,8 +31,8 @@ type user = {
     oldPassword?: string
   ) => Promise<{ success: boolean; error?: any }>;
   createStaff: (
-    staffName: string,
-    staffPassword: string
+    userName: string,
+    Password: string
   ) => Promise<{ success: boolean; error?: any }>;
   logOut: () => void;
   checkIn: (
