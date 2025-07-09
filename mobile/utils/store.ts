@@ -302,28 +302,7 @@ const userAuthStore = create<user>((set, get) => ({
     }
   },
 
-//   updateStaff: async (staffId, updates) => {
-//   try {
-//     const token = get().token || (await AsyncStorage.getItem("token"));
-//     const response = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/update/${staffId}`, {
-//       method: "PUT",
-//       headers: {
-//         "Content-type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: JSON.stringify(updates),
-//     });
 
-//     const data = await response.json();
-//     if (!response.ok) throw new Error(data.message || "Failed to update staff");
-
-//     console.log("Staff updated:", data.staff); // ✅ Ensure this contains updated password
-//     return { success: true, staff: data.staff }; // ✅ Return staff
-//   } catch (error) {
-//     console.log("Error updating staff:", error.message);
-//     return { success: false, error: error.message };
-//   }
-// },
 
   updateStaff: async (staffId: string, updates: any): Promise<ApiResponse> => {
   try {
