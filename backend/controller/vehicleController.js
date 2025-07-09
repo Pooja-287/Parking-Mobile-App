@@ -66,7 +66,7 @@ const Checkin = async (req, res) => {
       });
     }
 
-    const tokenId = uuidv4();
+    const tokenId = uuidv4().split("-")[0];
     const qrCode = await QRCode.toDataURL(tokenId);
 
     // ✅ Save new check-in

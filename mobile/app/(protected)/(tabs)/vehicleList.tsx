@@ -1,10 +1,21 @@
-import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  TextInput,
+  Platform,
+} from "react-native";
 import React, { useEffect, useState } from "react";
+import * as Clipboard from "expo-clipboard";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Picker } from "@react-native-picker/picker";
-import CheckIn from "@/components/CheckIn";
-import userAuthStore from "@/utils/store";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
+
+import userAuthStore from "@/utils/store";
 
 type Vehicle = {
   name: string;
@@ -21,21 +32,33 @@ const CheckinCard = ({ item }: any) => {
   return (
     <View className="bg-white shadow-lg rounded-md p-3 mx-4 mb-4 space-y-2">
       <View className="flex-row justify-between items-center">
-        <View className="flex-row gap-2  justify-center items-center">
-          <Text className="text-lg items-center justify-center font-semibold text-gray-900">
+        <View className="flex-row gap-2 justify-center items-center">
+          <Text className="text-lg font-semibold text-gray-900">
             {item.name}
           </Text>
           <Text
             className={`px-2 py-1 rounded-full text-xs font-semibold ${
               item.isCheckedOut
-                ? " bg-red-100 text-red-700"
+                ? "bg-red-100 text-red-700"
                 : "bg-green-100 text-green-700"
             }`}
           >
             {item.isCheckedOut ? "Checked Out" : "Active"}
           </Text>
         </View>
-        <Text className="text-xs text-gray-500">{item.vehicleNo}</Text>
+        <View className="flex-row justify-center items-center gap-1">
+          <Text className="text-xs text-gray-500">{item.vehicleNo}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              Clipboard.setStringAsync(item.tokenId);
+              Alert.alert("Copied!", `${item.tokenId} copied to clipboard.`);
+            }}
+          >
+            <Text className="text-xs text-green-500">
+              <Ionicons name="copy-outline" size={12} /> Token
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View className="bg-gray-100 p-1 rounded-sm">
@@ -83,10 +106,16 @@ const VehicleList = () => {
   const [checkType, setCheckType] = useState("checkins");
   const { vehicleList, VehicleListData } = userAuthStore();
   const [selected, setSelected] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleList = async (vehicle: string, type = checkType) => {
+    setLoading(true);
     const result = await vehicleList(vehicle, type);
     if (!result.success) Alert.alert("Error", result.error);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -99,17 +128,27 @@ const VehicleList = () => {
 
   return (
     <View className="flex-1 bg-[#F3F4F6] px-4 py-4 gap-3">
-      <View className=" bg-white justify-center items-center w-full shadow-md  rounded-sm p-2 flex-wrap overflow-scroll">
-        <Text className="flex-1 justify-center items-center text-2xl font-semibold mb-2">
-          Vehicles
-        </Text>
+      <View className="bg-white flex-row px-2 items-center rounded-sm">
+        <Ionicons name="search-outline" size={24} />
+        <TextInput
+          placeholder="Search vehicle"
+          value={search}
+          onChangeText={setSearch}
+          className="rounded text-base flex-1 px-3 h-12 bg-white"
+        />
+      </View>
+
+      <View className="bg-white justify-center items-center w-full shadow-sm rounded-sm p-2 flex-wrap overflow-scroll">
+        <View className="justify-center items-center mb-2">
+          <Text className="text-2xl font-semibold">Vehicles</Text>
+        </View>
+
         <FlatList
           data={Vehicles}
           horizontal
           keyExtractor={(item) => item.value}
           renderItem={({ item }) => {
             const isSelected = selected === item.value;
-
             return (
               <TouchableOpacity
                 className={`mx-2 items-center justify-center px-3 py-1 rounded-lg ${
@@ -122,11 +161,13 @@ const VehicleList = () => {
               >
                 <Ionicons
                   name={item.icon}
-                  size={24}
+                  size={22}
                   color={isSelected ? "#fff" : "#000"}
                 />
                 <Text
-                  className={`text-base ${isSelected ? "text-white" : "text-black"}`}
+                  className={`text-base ${
+                    isSelected ? "text-white" : "text-black"
+                  }`}
                 >
                   {item.name}
                 </Text>
@@ -134,37 +175,76 @@ const VehicleList = () => {
             );
           }}
           showsHorizontalScrollIndicator={false}
-          overScrollMode="always"
         />
       </View>
-      <View className=" flex-1 gap-5">
-        <View>
+
+      <View className="flex-row items-center gap-2">
+        <View className="flex-1">
           <Picker
             selectedValue={checkType}
             onValueChange={setCheckType}
-            className="h-14 bg-blue-100 shadow-md rounded-sm outline-none"
+            className="h-14 shadow-sm rounded-sm outline-none"
           >
             <Picker.Item label="Check In" value="checkins" />
             <Picker.Item label="Check Out" value="checkouts" />
           </Picker>
         </View>
-        <View className="flex-1 bg-white overflow-y-scroll">
-          {VehicleListData && VehicleListData.length > 0 ? (
-            <FlatList
-              data={VehicleListData}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => <CheckinCard item={item} />}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: 12 }}
-            />
-          ) : (
-            <View className="flex-1 justify-center items-center">
-              <Text className="text-gray-500 text-base">
-                No vehicle data found
-              </Text>
-            </View>
-          )}
-        </View>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          className="bg-blue-100 px-3 py-2 rounded shadow-sm"
+        >
+          <Text className="text-sm text-blue-800">
+            {filterDate ? format(filterDate, "MMM dd, yyyy") : "Pick Date"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={filterDate || new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (event.type === "set" && selectedDate) {
+              setFilterDate(selectedDate);
+            }
+          }}
+        />
+      )}
+
+      <View className="flex-1 bg-white">
+        {loading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#10B981" />
+            <Text className="mt-2 text-gray-500">Loading Vehicles...</Text>
+          </View>
+        ) : VehicleListData && VehicleListData.length > 0 ? (
+          <FlatList
+            data={Array.from(VehicleListData).filter((item) => {
+              const matchesSearch =
+                item.vehicleNo.toLowerCase().includes(search.toLowerCase()) ||
+                item.name.toLowerCase().includes(search.toLowerCase());
+
+              const matchesDate = filterDate
+                ? format(new Date(item.entryDateTime), "yyyy-MM-dd") ===
+                  format(filterDate, "yyyy-MM-dd")
+                : true;
+
+              return matchesSearch && matchesDate;
+            })}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => <CheckinCard item={item} />}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 12 }}
+          />
+        ) : (
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-gray-500 text-base">
+              No vehicle data found
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
