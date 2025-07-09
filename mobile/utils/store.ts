@@ -1,8 +1,5 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-
-// ✅ Generic API response type
 type ApiResponse<T = any> = {
   success: boolean;
   error?: string;
@@ -17,7 +14,6 @@ type user = {
   isLoading: boolean;
   isLogged: boolean;
   staffs: any[];
-  
   signup: (
     username: string,
     email: string,
@@ -35,20 +31,9 @@ type user = {
     oldPassword?: string
   ) => Promise<{ success: boolean; error?: any }>;
   createStaff: (
-    username: string,
-    password: string
+    staffName: string,
+    staffPassword: string
   ) => Promise<{ success: boolean; error?: any }>;
-  getAllStaffs: () => Promise<{ success: boolean; staffs?: any[]; error?: any }>;
-   getStaffTodayVehicles: () => Promise<void>;
-  getStaffTodayRevenue: () => Promise<void>;
-  updateStaff: (
-    staffId: string,
-    updates: {username?: string; 
-     password?: string 
-    }
-  ) => Promise<ApiResponse>; // ✅ Corrected this line
-  deleteStaff: (staffId: string) => Promise<{ success: boolean; error?: string }>;
-
   logOut: () => void;
   checkIn: (
     name: string,
@@ -62,10 +47,25 @@ type user = {
   ) => Promise<{ success: boolean; error?: any }>;
   checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
   loadPricesIfNotSet: () => Promise<void>;
+
   vehicleList: (
     vehicle: string,
     checkType: string
   ) => Promise<{ success: boolean; error?: any }>;
+  getAllStaffs: () => Promise<{
+    success: boolean;
+    staffs?: any[];
+    error?: any;
+  }>;
+  getStaffTodayVehicles: () => Promise<void>;
+  getStaffTodayRevenue: () => Promise<void>;
+  updateStaff: (
+    staffId: string,
+    updates: { username?: string; password?: string }
+  ) => Promise<ApiResponse>;
+  deleteStaff: (
+    staffId: string
+  ) => Promise<{ success: boolean; error?: string }>;
 };
 
 const URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
@@ -73,15 +73,12 @@ const URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
 const userAuthStore = create<user>((set, get) => ({
   user: null,
   token: null,
-  prices: {},
   Reciept: {},
-
-  VehicleListData:[],
+  prices: {},
+  VehicleListData: [],
   isLogged: false,
   isLoading: false,
-  
   staffs: [],
-
   loadPricesIfNotSet: async () => {
     const currentPrices = get().prices;
     if (!currentPrices || Object.keys(currentPrices).length === 0) {
@@ -91,28 +88,30 @@ const userAuthStore = create<user>((set, get) => ({
       }
     }
   },
-
-  signup: async (username, email, password) => {
+  signup: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            email,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Something went wrong!");
-      set({ isLoading: false });
+
+      if (!response.ok)
+        throw new Error(data.message || "Something went wrong!!");
+
+      set({
+        isLoading: false,
+      });
+
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
@@ -120,55 +119,45 @@ const userAuthStore = create<user>((set, get) => ({
     }
   },
 
-  login: async (username, password) => {
+  login: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/loginUser",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/loginUser`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Login failed");
 
-      // const correctedUser = {
-      //   ...data.user,
-      //   _id: data.user._id || data.user.id,
-      //   role: data.user.role || "user",
-      // };
       const correctedUser = {
-  ...data.user,
-  _id: data.user._id || data.user.id,
-  role: (data.user.role || "user").toLowerCase(), // admin / staff
-};
+        ...data.user,
+        _id: data.user._id || data.user.id,
+        role: data.user.role || "user",
+      };
 
-      const responsePrice = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/getPrices",
-        {
-          method: "get",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-        }
-      );
+      const responsePrice = await fetch(`${URL}api/getPrices`, {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
 
+      const data1 = await responsePrice.json();
 
       await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
       await AsyncStorage.setItem("token", data.token);
-    const priceData = await responsePrice.json();
+
       set({
         user: correctedUser,
         token: data.token,
-        prices: priceData.vehicle,
+        prices: data1.vehicle,
         isLoading: false,
         isLogged: true,
       });
@@ -211,7 +200,7 @@ const userAuthStore = create<user>((set, get) => ({
     }
   },
 
-  createStaff: async (username, password) => {
+  createStaff: async (username: string, password: string) => {
     set({ isLoading: true });
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
@@ -242,144 +231,12 @@ const userAuthStore = create<user>((set, get) => ({
     }
   },
 
-  getAllStaffs: async () => {
-    set({ isLoading: true });
-    try {
-      const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/all",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to fetch staff list");
-
-      set({ staffs: data.staffs, isLoading: false });
-      return { success: true, staffs: data.staffs };
-    } catch (error: any) {
-      set({ isLoading: false });
-      return { success: false, error: error.message };
-    }
-  },
-    getStaffTodayVehicles: async()=>{
-    try{
-      const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/today-checkins`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      if(!response.ok) throw new Error(data.message || "Failed to fetch vehicles");
-      console.log("Today's Vehicles:", data.vehicles);
-    } catch (error: any) {
-      console.log("Error getting today's vehicles:", error.message);
-    }
-  },
-
-  getStaffTodayRevenue: async() => {
-    try{
-      const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch('https://kj8cjmpw-5000.inc1.devtunnels.ms/api/today-revenue', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      const data = await response.json();
-      if(response.ok) throw new Error(data.message || "Failed to fetch revenue");
-      console.log("Today's revenue:", data.revenue);
-    }catch (error: any) {
-      console.log("Error getting revenue:", error.message);
-    }
-  },
-
-//   updateStaff: async (staffId, updates) => {
-//   try {
-//     const token = get().token || (await AsyncStorage.getItem("token"));
-//     const response = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/update/${staffId}`, {
-//       method: "PUT",
-//       headers: {
-//         "Content-type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: JSON.stringify(updates),
-//     });
-
-//     const data = await response.json();
-//     if (!response.ok) throw new Error(data.message || "Failed to update staff");
-
-//     console.log("Staff updated:", data.staff); // ✅ Ensure this contains updated password
-//     return { success: true, staff: data.staff }; // ✅ Return staff
-//   } catch (error) {
-//     console.log("Error updating staff:", error.message);
-//     return { success: false, error: error.message };
-//   }
-// },
-
-  updateStaff: async (staffId: string, updates: any): Promise<ApiResponse> => {
-  try {
-    const token = get().token || (await AsyncStorage.getItem("token"));
-    const response = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/update/${staffId}`, {
-      method: "PUT",
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(updates),
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to update staff");
-
-    console.log("Staff updated:", data.staff);
-    return { success: true, staff: data.staff };
-  } catch (error: any) {
-    console.log("Error updating staff:", error.message);
-    return { success: false, error: error.message };
-  }
-},
-
-  
-  deleteStaff: async(staffId) =>{
-    try{
-      const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`https://kj8cjmpw-5000.inc1.devtunnels.ms/api/delete/${staffId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-       const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to delete staff");
-    
-    console.log("Staff deleted successfully");
-    return { success: true };
-  } catch (error: any) {
-    console.log("Error deleting staff:", error.message);
-    return { success: false, error: error.message };
-  }
-  },
-
-  
-
-  
   logOut: async () => {
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("prices");
-    set({ token: null, user: null, prices: {}, isLogged: false, staffs: [] });
+    set({ token: null, user: null, prices: {}, isLogged: false });
   },
-
   checkIn: async (
     name,
     vehicleNo,
@@ -393,61 +250,54 @@ const userAuthStore = create<user>((set, get) => ({
     try {
       const user = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkin",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name,
-            vehicleNo,
-            vehicleType,
-            mobile,
-            paymentMethod,
-            days,
-            amount,
-            user: JSON.parse(user || ""),
-          }),
-        }
-      );
+      const response = await fetch(`${URL}api/checkin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          vehicleNo,
+          vehicleType,
+          mobile,
+          paymentMethod,
+          days,
+          amount,
+          user: JSON.parse(user || ""),
+        }),
+      });
 
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || "Check-in failed");
+        throw new Error(data.message || "Something went wrong!!");
 
-      set({ isLoading: false });
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
       return { success: false, error: error.message };
     }
   },
-
-  checkOut: async (tokenId) => {
+  checkOut: async (tokenId: any) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(
-        "https://kj8cjmpw-5000.inc1.devtunnels.ms/api/checkout",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            tokenId,
-          }),
-        }
-      );
+      const user = await AsyncStorage.getItem("user");
+      const response = await fetch(`${URL}api/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tokenId,
+          user: JSON.parse(user || ""),
+        }),
+      });
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.message || "Check-out failed");
-
-      set({ prices: data, isLoading: false });
+        throw new Error(data.message || "Something went wrong!!");
+      set({ prices: data });
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
@@ -475,6 +325,111 @@ const userAuthStore = create<user>((set, get) => ({
       return { success: true };
     } catch (error: any) {
       set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+
+  getAllStaffs: async () => {
+    set({ isLoading: true });
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const response = await fetch(`${URL}api/all`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to fetch staff list");
+
+      set({ staffs: data.staffs, isLoading: false });
+      return { success: true, staffs: data.staffs };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message };
+    }
+  },
+  getStaffTodayVehicles: async () => {
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const response = await fetch(`${URL}api/today-checkins`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to fetch vehicles");
+      console.log("Today's Vehicles:", data.vehicles);
+    } catch (error: any) {
+      console.log("Error getting today's vehicles:", error.message);
+    }
+  },
+
+  getStaffTodayRevenue: async () => {
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const response = await fetch(`${URL}api/today-revenue`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok)
+        throw new Error(data.message || "Failed to fetch revenue");
+      console.log("Today's revenue:", data.revenue);
+    } catch (error: any) {
+      console.log("Error getting revenue:", error.message);
+    }
+  },
+
+  updateStaff: async (staffId: string, updates: any): Promise<ApiResponse> => {
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const response = await fetch(`${URL}api/update/${staffId}`, {
+        method: "PUT",
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update staff");
+
+      console.log("Staff updated:", data.staff);
+      return { success: true, staff: data.staff };
+    } catch (error: any) {
+      console.log("Error updating staff:", error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  deleteStaff: async (staffId) => {
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const response = await fetch(`${URL}api/delete/${staffId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to delete staff");
+
+      console.log("Staff deleted successfully");
+      return { success: true };
+    } catch (error: any) {
+      console.log("Error deleting staff:", error.message);
       return { success: false, error: error.message };
     }
   },

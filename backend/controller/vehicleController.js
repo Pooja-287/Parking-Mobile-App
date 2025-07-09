@@ -18,7 +18,6 @@ const Checkin = async (req, res) => {
       user,
     } = req.body;
 
-    // ✅ Validate required fields
     if (
       !vehicleType ||
       !vehicleNo ||
@@ -52,7 +51,6 @@ const Checkin = async (req, res) => {
       adminId = staff.createdBy;
     }
 
-    // ✅ Check if vehicle is already checked in
     const alreadyCheckedIn = await VehicleCheckin.findOne({
       vehicleNo: cleanedPlate,
       isCheckedOut: false,
@@ -66,13 +64,12 @@ const Checkin = async (req, res) => {
       });
     }
 
-    const tokenId = uuidv4().split("-")[0];
+    const tokenId = uuidv4();
     const qrCode = await QRCode.toDataURL(tokenId);
 
-    // ✅ Save new check-in
     const newCheckin = new VehicleCheckin({
       name,
-      vehicleNo: cleanedPlate, // Always save formatted number
+      vehicleNo: cleanedPlate,
       vehicleType,
       mobile,
       paymentMethod,
@@ -83,8 +80,8 @@ const Checkin = async (req, res) => {
       adminId,
       checkInBy,
       tokenId,
-      qrCode, // Optional: save QR code if you use it
-      isCheckedOut: false, // Explicitly set this if your schema doesn't default
+      qrCode,
+      isCheckedOut: false,
     });
 
     await newCheckin.save();
@@ -101,14 +98,6 @@ const Checkin = async (req, res) => {
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
   }
-};
-
-// Format time only (HH:MM:SS AM/PM)
-const formatTimeOnly = (date) => {
-  return new Date(date).toLocaleTimeString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    hour12: true,
-  });
 };
 
 const Checkout = async (req, res) => {
