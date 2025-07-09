@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import userAuthStore from "../utils/store"; 
+import userAuthStore from "@/utils/store"; 
 
 const AccountSettings = () => {
   const router = useRouter();
@@ -30,11 +30,11 @@ const AccountSettings = () => {
       {/* ✅ Create Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/createStaffScreen")}
+        onPress={() => router.push("/staff/create")}
       >
         <Ionicons name="person-add-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
-          createStaffScreen
+          create
         </Text>
       </TouchableOpacity>
 
@@ -63,22 +63,22 @@ const AccountSettings = () => {
       {/* ✅ Update Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/updateScreen")}
+        onPress={() => router.push('/staff/priceDetails')}
       >
         <Ionicons name="create-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
-          UpdateStaff
+        priceDetails
         </Text>
       </TouchableOpacity>
 
       {/* ✅ Delete Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/DeleteStaff")}
+        onPress={() => router.push("/staff/vehicleList")}
       >
         <Ionicons name="trash-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
-          DeleteStaff
+          vehicleList
         </Text>
       </TouchableOpacity>
     </SafeAreaView>

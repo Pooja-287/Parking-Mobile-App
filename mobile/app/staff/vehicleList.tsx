@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const updateScreen = () => {
+const vehicleList = () => {
   return (
     <View>
-      <Text>updateScreen</Text>
+      <Text>vehicleList</Text>
     </View>
   )
 }
 
-export default updateScreen
+export default vehicleList
 
 const styles = StyleSheet.create({})

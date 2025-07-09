@@ -147,44 +147,34 @@ const registerAdmin = async (req, res) => {
   }
 };
 
+
+
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res
-        .status(400)
-        .json({ message: "Username and password are required" });
+      return res.status(400).json({ message: "Username and password are required" });
     }
 
-    let user, role;
+    let user = await Admin.findOne({ username });
+    let role = "admin";
 
-    // First, try to find as Admin
-    user = await Admin.findOne({ username });
-    if (user) {
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res
-          .status(401)
-          .json({ message: "Invalid username or password" });
-      }
-      role = "admin";
-    } else {
-      // Try as Staff
+    if (!user) {
       user = await Staff.findOne({ username });
-      if (!user) {
-        return res
-          .status(401)
-          .json({ message: "Invalid username or password" });
-      }
+      role = "staff";
+    }
 
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res
-          .status(401)
-          .json({ message: "Invalid username or password" });
-      }
-      role = "Staff";
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username or password (user not found)" });
+    }
+
+    // ✅ Compare with correct hashed field
+    const hashed = role === "admin" ? user.password : user.hashedPassword;
+
+    const isPasswordValid = await bcrypt.compare(password, hashed);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid username or password (wrong password)" });
     }
 
     const token = jwt.sign(
@@ -205,11 +195,11 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 const viewProfile = async (req, res) => {
   try {
