@@ -35,7 +35,7 @@ const Login = () => {
         text1: "Login Failed",
         text2: result.error || "Invalid credentials",
         position: "top",
-        visibilityTime: 4000,
+        visibilityTime: 2000,
         autoHide: true,
       });
     } else {
@@ -43,7 +43,7 @@ const Login = () => {
         type: "success",
         text1: "Login Successful",
         position: "top",
-        visibilityTime: 4000,
+        visibilityTime: 2000,
         autoHide: true,
       });
     }

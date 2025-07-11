@@ -8,6 +8,8 @@ interface VehicleData {
   checkouts: any[];
   allData: any[];
   fullData: any[];
+  PaymentMethod: any[];
+  VehicleTotalMoney: any[];
 }
 
 interface ApiResponse<T = any> {
@@ -77,6 +79,8 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
   checkouts: [],
   allData: [],
   fullData: [],
+  VehicleTotalMoney: [],
+  PaymentMethod: [],
 
   loadPricesIfNotSet: async () => {
     const stored = get().prices;
@@ -98,6 +102,8 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
         checkins: data.checkinsCount,
         checkouts: data.checkoutsCount,
         allData: data.allDataCount,
+        VehicleTotalMoney: data.money,
+        PaymentMethod: data.PaymentMethod,
         fullData: data.fullData,
       });
     } catch (err: any) {
@@ -149,10 +155,7 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
       });
       const priceData = await priceRes.json();
 
-      const user = await AsyncStorage.setItem(
-        "user",
-        JSON.stringify(correctedUser)
-      );
+      await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
       await AsyncStorage.setItem("token", data.token);
       get().getTodayVehicles();
       set({
@@ -162,7 +165,7 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
         isLoading: false,
         isLogged: true,
       });
-      console.log(user);
+
       return { success: true };
     } catch (err: any) {
       set({ isLoading: false });

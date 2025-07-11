@@ -16,6 +16,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, Redirect } from "expo-router";
 import userAuthStore from "../utils/store";
+import ToastManager, { Toast } from "toastify-react-native";
 
 const Signup = () => {
   const [userName, setUserName] = useState("");
@@ -29,11 +30,24 @@ const Signup = () => {
   const handleSignup = async () => {
     const result = await signup(userName, email, password);
     if (!result.success) {
-      Alert.alert("Error", result.error);
+      Toast.show({
+        type: "error",
+        text1: "SignUp Failed",
+        text2: result.error || "Invalid credentials",
+        position: "top",
+        visibilityTime: 2000,
+        autoHide: true,
+      });
     } else {
-      Alert.alert("Signup Successfully");
-      return <Redirect href={"/login"} />;
+      Toast.show({
+        type: "success",
+        text1: "Signup Successful",
+        position: "top",
+        visibilityTime: 2000,
+        autoHide: true,
+      });
     }
+    return <Redirect href={"/login"} />;
   };
 
   return (
@@ -157,6 +171,7 @@ const Signup = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+      <ToastManager showCloseIcon={false} />
     </SafeAreaView>
   );
 };

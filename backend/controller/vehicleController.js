@@ -351,10 +351,20 @@ const getTodayVehicle = async (req, res) => {
       return acc;
     }, {});
 
+    const allDataTotalMoney = allData.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + curr.amount;
+      return acc;
+    }, {});
+    const moneyByPaymentMethod = allData.reduce((acc, curr) => {
+      acc[curr.paymentMethod] = (acc[curr.paymentMethod] || 0) + curr.amount;
+      return acc;
+    }, {});
     const vehicleStats = {
       checkinsCount,
       checkoutsCount,
       allDataCount,
+      money: allDataTotalMoney,
+      PaymentMethod: moneyByPaymentMethod,
       fullData: {
         checkins,
         checkouts,
