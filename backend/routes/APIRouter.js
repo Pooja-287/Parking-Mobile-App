@@ -13,6 +13,11 @@ router.post("/api/checkin", verifyToken, vehicleController.Checkin);
 router.post("/api/checkout", verifyToken, vehicleController.Checkout);
 router.post("/api/checkins", verifyToken, vehicleController.getCheckins);
 router.post("/api/checkouts", verifyToken, vehicleController.getCheckouts);
+router.get(
+  "/api/getTodayVehicle",
+  verifyToken,
+  vehicleController.getTodayVehicle
+);
 
 // New routes
 router.get(

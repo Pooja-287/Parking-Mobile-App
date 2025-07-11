@@ -1,39 +1,45 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-type ApiResponse<T = any> = {
+
+const BASE_URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
+
+interface VehicleData {
+  checkins: any[];
+  checkouts: any[];
+  allData: any[];
+  fullData: any[];
+}
+
+interface ApiResponse<T = any> {
   success: boolean;
   error?: string;
   staff?: T;
-};
-type user = {
-  user: string | null;
+}
+
+interface UserAuthState extends VehicleData {
+  user: any;
   token: string | null;
-  prices: object | undefined;
-  VehicleListData: ArrayLike<any> | null | undefined;
-  Reciept: object;
+  prices: Record<string, any>;
+  VehicleListData: any[];
+  Reciept: Record<string, any>;
   isLoading: boolean;
   isLogged: boolean;
   staffs: any[];
+
   signup: (
     username: string,
     email: string,
     password: string
-  ) => Promise<{ success: boolean; error?: any }>;
-  login: (
-    username: string,
-    password: string
-  ) => Promise<{ success: boolean; error?: any }>;
+  ) => Promise<ApiResponse>;
+  login: (username: string, password: string) => Promise<ApiResponse>;
   updateProfile: (
     id: string,
     username: string,
     newPassword?: string,
     avatar?: string,
     oldPassword?: string
-  ) => Promise<{ success: boolean; error?: any }>;
-  createStaff: (
-    userName: string,
-    Password: string
-  ) => Promise<{ success: boolean; error?: any }>;
+  ) => Promise<ApiResponse>;
+  createStaff: (username: string, password: string) => Promise<ApiResponse>;
   logOut: () => void;
   checkIn: (
     name: string,
@@ -44,96 +50,89 @@ type user = {
     days: string,
     amount: number,
     perDayRate: string
-  ) => Promise<{ success: boolean; error?: any }>;
-  checkOut: (tokenId: string) => Promise<{ success: boolean; error?: any }>;
+  ) => Promise<ApiResponse>;
+  checkOut: (tokenId: string) => Promise<ApiResponse>;
   loadPricesIfNotSet: () => Promise<void>;
-
-  vehicleList: (
-    vehicle: string,
-    checkType: string
-  ) => Promise<{ success: boolean; error?: any }>;
-  getAllStaffs: () => Promise<{
-    success: boolean;
-    staffs?: any[];
-    error?: any;
-  }>;
-  getStaffTodayVehicles: () => Promise<void>;
+  vehicleList: (vehicle: string, checkType: string) => Promise<ApiResponse>;
+  getAllStaffs: () => Promise<ApiResponse>;
+  getTodayVehicles: () => Promise<void>;
   getStaffTodayRevenue: () => Promise<void>;
   updateStaff: (
     staffId: string,
     updates: { username?: string; password?: string }
   ) => Promise<ApiResponse>;
-  deleteStaff: (
-    staffId: string
-  ) => Promise<{ success: boolean; error?: string }>;
-};
+  deleteStaff: (staffId: string) => Promise<ApiResponse>;
+}
 
-const URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
-
-const userAuthStore = create<user>((set, get) => ({
+const userAuthStore = create<UserAuthState>((set, get) => ({
   user: null,
   token: null,
-  Reciept: {},
   prices: {},
   VehicleListData: [],
-  isLogged: false,
+  Reciept: {},
   isLoading: false,
+  isLogged: false,
   staffs: [],
+  checkins: [],
+  checkouts: [],
+  allData: [],
+  fullData: [],
+
   loadPricesIfNotSet: async () => {
-    const currentPrices = get().prices;
-    if (!currentPrices || Object.keys(currentPrices).length === 0) {
-      const storedPrices = await AsyncStorage.getItem("prices");
-      if (storedPrices) {
-        set({ prices: JSON.parse(storedPrices) });
-      }
+    const stored = get().prices;
+    if (!stored || Object.keys(stored).length === 0) {
+      const prices = await AsyncStorage.getItem("prices");
+      if (prices) set({ prices: JSON.parse(prices) });
     }
   },
-  signup: async (username: string, email: string, password: string) => {
-    set({ isLoading: true });
+
+  getTodayVehicles: async () => {
     try {
-      const response = await fetch(`${URL}api/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      const res = await fetch(`${BASE_URL}api/getTodayVehicle`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await response.json();
-
-      if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Fetch error");
       set({
-        isLoading: false,
+        checkins: data.checkinsCount,
+        checkouts: data.checkoutsCount,
+        allData: data.allDataCount,
+        fullData: data.fullData,
       });
-
-      return { success: true };
-    } catch (error: any) {
-      set({ isLoading: false });
-      return { success: false, error: error.message };
+    } catch (err: any) {
+      console.error("Today vehicle error:", err.message);
     }
   },
 
-  login: async (username: string, password: string) => {
+  signup: async (username, email, password) => {
     set({ isLoading: true });
     try {
-      const response = await fetch(`${URL}api/loginUser`, {
+      const res = await fetch(`${BASE_URL}api/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Login failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      set({ isLoading: false });
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message };
+    }
+  },
+
+  login: async (username, password) => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch(`${BASE_URL}api/loginUser`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
 
       const correctedUser = {
         ...data.user,
@@ -141,31 +140,33 @@ const userAuthStore = create<user>((set, get) => ({
         role: data.user.role || "user",
       };
 
-      const responsePrice = await fetch(`${URL}api/getPrices`, {
-        method: "get",
+      const priceRes = await fetch(`${BASE_URL}api/getPrices`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${data.token}`,
         },
       });
+      const priceData = await priceRes.json();
 
-      const data1 = await responsePrice.json();
-
-      await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
+      const user = await AsyncStorage.setItem(
+        "user",
+        JSON.stringify(correctedUser)
+      );
       await AsyncStorage.setItem("token", data.token);
-
+      get().getTodayVehicles();
       set({
         user: correctedUser,
         token: data.token,
-        prices: data1.vehicle,
+        prices: priceData.vehicle,
         isLoading: false,
         isLogged: true,
       });
-
+      console.log(user);
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
 
@@ -173,44 +174,39 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
+      const body: any = { username, oldPassword };
+      if (newPassword) body.password = newPassword;
+      if (avatar) body.avatar = avatar;
 
-      const updateBody: any = { username, oldPassword };
-      if (newPassword) updateBody.password = newPassword;
-      if (avatar) updateBody.avatar = avatar;
-
-      const response = await fetch(`${URL}api/updateAdmin/${id}`, {
+      const res = await fetch(`${BASE_URL}api/updateAdmin/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updateBody),
+        body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Update failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
 
       await AsyncStorage.setItem("user", JSON.stringify(data.admin));
       set({ user: data.admin, isLoading: false });
-
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
 
-  createStaff: async (username: string, password: string) => {
+  createStaff: async (username, password) => {
     set({ isLoading: true });
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
-      const currentUser =
+      const user =
         get().user || JSON.parse((await AsyncStorage.getItem("user")) || "{}");
-
-      const adminId = (currentUser as any)?._id;
-      if (!adminId) throw new Error("Admin ID not found");
-
-      const response = await fetch(`${URL}api/create/${adminId}`, {
+      const adminId = user?._id;
+      const res = await fetch(`${BASE_URL}api/create/${adminId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -218,25 +214,21 @@ const userAuthStore = create<user>((set, get) => ({
         },
         body: JSON.stringify({ username, password }),
       });
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Staff creation failed");
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       set({ isLoading: false });
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
 
   logOut: async () => {
-    await AsyncStorage.removeItem("user");
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("prices");
+    await AsyncStorage.multiRemove(["user", "token", "prices"]);
     set({ token: null, user: null, prices: {}, isLogged: false });
   },
+
   checkIn: async (
     name,
     vehicleNo,
@@ -248,9 +240,10 @@ const userAuthStore = create<user>((set, get) => ({
   ) => {
     set({ isLoading: true });
     try {
-      const user = await AsyncStorage.getItem("user");
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(`${URL}api/checkin`, {
+      const user = JSON.parse((await AsyncStorage.getItem("user")) || "{}");
+
+      const res = await fetch(`${BASE_URL}api/checkin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -264,68 +257,61 @@ const userAuthStore = create<user>((set, get) => ({
           paymentMethod,
           days,
           amount,
-          user: JSON.parse(user || ""),
+          user,
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
-  checkOut: async (tokenId: any) => {
+
+  checkOut: async (tokenId) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
-      const user = await AsyncStorage.getItem("user");
-      const response = await fetch(`${URL}api/checkout`, {
+      const user = JSON.parse((await AsyncStorage.getItem("user")) || "{}");
+      const res = await fetch(`${BASE_URL}api/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          tokenId,
-          user: JSON.parse(user || ""),
-        }),
+        body: JSON.stringify({ tokenId, user }),
       });
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       set({ prices: data });
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
-  vehicleList: async (vehicle: string, checkType: string) => {
+
+  vehicleList: async (vehicle, checkType) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await fetch(`${URL}api/${checkType}`, {
+      const res = await fetch(`${BASE_URL}api/${checkType}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          vehicle,
-        }),
+        body: JSON.stringify({ vehicle }),
       });
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Something went wrong!!");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       set({ VehicleListData: data.vehicle });
       return { success: true };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
+      return { success: false, error: err.message };
     }
   },
 
@@ -333,104 +319,68 @@ const userAuthStore = create<user>((set, get) => ({
     set({ isLoading: true });
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`${URL}api/all`, {
+      const res = await fetch(`${BASE_URL}api/all`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to fetch staff list");
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       set({ staffs: data.staffs, isLoading: false });
       return { success: true, staffs: data.staffs };
-    } catch (error: any) {
+    } catch (err: any) {
       set({ isLoading: false });
-      return { success: false, error: error.message };
-    }
-  },
-  getStaffTodayVehicles: async () => {
-    try {
-      const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`${URL}api/today-checkins`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to fetch vehicles");
-      console.log("Today's Vehicles:", data.vehicles);
-    } catch (error: any) {
-      console.log("Error getting today's vehicles:", error.message);
+      return { success: false, error: err.message };
     }
   },
 
   getStaffTodayRevenue: async () => {
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`${URL}api/today-revenue`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(`${BASE_URL}api/today-revenue`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await response.json();
-      if (response.ok)
-        throw new Error(data.message || "Failed to fetch revenue");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       console.log("Today's revenue:", data.revenue);
-    } catch (error: any) {
-      console.log("Error getting revenue:", error.message);
+    } catch (err: any) {
+      console.error("Revenue error:", err.message);
     }
   },
 
-  updateStaff: async (staffId: string, updates: any): Promise<ApiResponse> => {
+  updateStaff: async (staffId, updates) => {
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`${URL}api/update/${staffId}`, {
+      const res = await fetch(`${BASE_URL}api/update/${staffId}`, {
         method: "PUT",
         headers: {
-          "Content-type": "application/json",
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(updates),
       });
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to update staff");
-
-      console.log("Staff updated:", data.staff);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       return { success: true, staff: data.staff };
-    } catch (error: any) {
-      console.log("Error updating staff:", error.message);
-      return { success: false, error: error.message };
+    } catch (err: any) {
+      return { success: false, error: err.message };
     }
   },
 
   deleteStaff: async (staffId) => {
     try {
       const token = get().token || (await AsyncStorage.getItem("token"));
-      const response = await fetch(`${URL}api/delete/${staffId}`, {
+      const res = await fetch(`${BASE_URL}api/delete/${staffId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Failed to delete staff");
-
-      console.log("Staff deleted successfully");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
       return { success: true };
-    } catch (error: any) {
-      console.log("Error deleting staff:", error.message);
-      return { success: false, error: error.message };
+    } catch (err: any) {
+      return { success: false, error: err.message };
     }
   },
 }));

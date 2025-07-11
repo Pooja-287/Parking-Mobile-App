@@ -46,7 +46,14 @@ const CheckIn = () => {
 
   const handleSubmit = async () => {
     if (!vehicleNo || !mobile) {
-      Toast.error("Error message!");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "All fields are required",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
       return;
     }
 

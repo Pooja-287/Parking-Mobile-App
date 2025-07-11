@@ -12,7 +12,6 @@ const CheckOut = () => {
 
   const handleSubmit = async () => {
     if (!tokenId) {
-      Alert.alert("Enter the Token ID");
       Toast.show({
         type: "error",
         text1: "Error",

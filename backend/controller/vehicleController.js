@@ -120,10 +120,10 @@ const Checkout = async (req, res) => {
         .json({ message: "No check-in found with this tokenId" });
     }
 
-    if (vehicle.isCheckOut) {
+    if (vehicle.isCheckedOut) {
       return res.status(400).json({
         message: "Vehicle is already checked out",
-        exitTimeIST: convertToISTString(vehicle.exitDateTime),
+        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
       });
     }
 
@@ -179,12 +179,11 @@ const Checkout = async (req, res) => {
       readableDuration = `${fullDays} day${fullDays > 1 ? "s" : ""}`;
     }
 
-    vehicle.exitDateTime = exitTime;
+    vehicle.CheckOutTime = exitTime;
     vehicle.totalAmount = totalAmount;
     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
     vehicle.isCheckedOut = true;
-    vehicle.checkedOutBy = userId;
-    vehicle.checkedOutByRole = userRole;
+    vehicle.checkOutBy = userId;
 
     await vehicle.save();
 
@@ -192,9 +191,9 @@ const Checkout = async (req, res) => {
       message: "Vehicle checked out successfully",
       receipt: {
         name: vehicle.name,
-        mobileNumber: vehicle.mobileNumber,
+        mobileNumber: vehicle.mobile,
         vehicleType: vehicle.vehicleType,
-        numberPlate: vehicle.vehicleNumber,
+        numberPlate: vehicle.vehicleNo,
         table: {
           entryTime: entryTime.toLocaleTimeString(),
           exitTime: exitTime.toLocaleTimeString(),
@@ -305,6 +304,71 @@ const getVehicleList = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+const getTodayVehicle = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const checkins = await VehicleCheckin.find({
+      checkInBy: userId,
+      isCheckedOut: false,
+      entryDateTime: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    const checkouts = await VehicleCheckin.find({
+      checkInBy: userId,
+      isCheckedOut: true,
+      entryDateTime: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    const allData = await VehicleCheckin.find({
+      checkInBy: userId,
+      $or: [
+        { entryDateTime: { $gte: startOfToday, $lte: endOfToday } },
+        { CheckOutTime: { $gte: startOfToday, $lte: endOfToday } },
+      ],
+    });
+
+    const checkinsCount = checkins.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+
+    const checkoutsCount = checkouts.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+    const allDataCount = allData.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+
+    const vehicleStats = {
+      checkinsCount,
+      checkoutsCount,
+      allDataCount,
+      fullData: {
+        checkins,
+        checkouts,
+        allData,
+      },
+    };
+
+    res.status(200).json(vehicleStats);
+  } catch (error) {
+    console.error("getTodayVehicleReport error:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -551,6 +615,7 @@ export default {
   getCheckins,
   getCheckouts,
   getVehicleList,
+  getTodayVehicle,
   getVehicleById,
   getVehicleByToken,
   getVehicleByNumberPlate,
