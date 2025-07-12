@@ -13,11 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import userAuthStore from "@/utils/store"; 
+import { useNavigation } from "@react-navigation/native";
 
 const CreateStaff = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+const navigation = useNavigation();
 
   const { createStaff, getAllStaffs, isLoading } = userAuthStore();
 
@@ -63,9 +65,12 @@ const CreateStaff = () => {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           className="flex-1 px-5 pt-10"
         >
-          <Text className="text-3xl font-bold text-green-800 mb-8 text-center">
-            Create Staff
-          </Text>
+          <View className="flex-row items-center mb-8">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="mr-2">
+          <Ionicons name="arrow-back" size={28} color="#1F2937" />
+        </TouchableOpacity>
+        <Text className="text-2xl font-bold text-gray-800">Create Staff</Text>
+      </View>
 
           <Text className="text-lg text-gray-700 mb-2">Username</Text>
           <TextInput

@@ -18,8 +18,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { BlurView } from "expo-blur"; // ✅ BlurView
+import { BlurView } from "expo-blur"; 
 import userAuthStore from "@/utils/store";
+import { useNavigation } from "@react-navigation/native";
+
 
 const AllStaffs = () => {
   const { getAllStaffs, staffs, isLoading, deleteStaff, updateStaff } = userAuthStore();
@@ -30,6 +32,8 @@ const AllStaffs = () => {
   const [editPassword, setEditPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
+  const navigation = useNavigation();
+
 
   useEffect(() => {
     fetchStaffs();
@@ -120,7 +124,7 @@ const AllStaffs = () => {
   const renderItem = ({ item }: any) => (
     <View className="bg-white p-4 mb-3 rounded-lg shadow">
       <View className="flex-row justify-between items-center mb-1">
-        <Text className="text-lg font-bold">👤 {item.username}</Text>
+        <Text className="text-lg font-bold">{item.username}</Text>
         <View className="flex-row gap-6">
           <TouchableOpacity onPress={() => setSelectedStaff(item)}>
             <Ionicons name="eye-outline" size={22} color="gray" />
@@ -150,8 +154,13 @@ const AllStaffs = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100 px-4 py-6">
-      <Text className="text-2xl font-bold mb-4">👥 Staff List</Text>
+    <SafeAreaView className="flex-1 bg-gray-100 px-4 mt-6 py-6">
+   <View className="flex-row items-center mb-6">
+    <TouchableOpacity onPress={() => navigation.goBack()} className="mr-2">
+      <Ionicons name="arrow-back" size={28} color="#1F2937" />
+    </TouchableOpacity>
+    <Text className="text-2xl font-bold text-gray-800 " > Staff Details</Text>
+  </View>
 
       {isLoading ? (
         <ActivityIndicator size="large" color="#4F46E5" />

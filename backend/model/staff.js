@@ -24,11 +24,15 @@ const staffSchema = new mongoose.Schema({
     default: 'staff'
   },
 
-  // ✅ Link to Admin
-  createdBy: {
+  // ✅ Correct naming
+  adminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',
     required: true
+  },
+   permissions: {
+    type: [String], // Example: ["checkin", "checkout", "monthlyPass"]
+    default: []
   }
 });
 

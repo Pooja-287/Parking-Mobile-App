@@ -1,14 +1,17 @@
+import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
+  View,
   Text,
   TouchableOpacity,
-  View,
   ActivityIndicator,
+  FlatList,
   TextInput,
+  Alert,
   Platform,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useIsFocused } from "@react-navigation/native";
+import { useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Picker } from "@react-native-picker/picker";
@@ -17,11 +20,14 @@ import { format } from "date-fns";
 
 import userAuthStore from "@/utils/store";
 
-type Vehicle = {
-  name: string;
-  value: string;
-  icon: keyof typeof Ionicons.glyphMap;
-};
+const Vehicles = [
+  { name: "All", value: "all", icon: "list-outline" },
+  { name: "Cycle", value: "cycle", icon: "bicycle-outline" },
+  { name: "Bike", value: "bike", icon: "car-sport-outline" },
+  { name: "Car", value: "car", icon: "car-outline" },
+  { name: "Van", value: "van", icon: "bus-outline" },
+  { name: "Bus", value: "bus", icon: "bus-outline" },
+];
 
 const CheckinCard = ({ item }: any) => {
   const formattedDate = format(
@@ -51,7 +57,7 @@ const CheckinCard = ({ item }: any) => {
           <TouchableOpacity
             onPress={() => {
               Clipboard.setStringAsync(item.tokenId);
-              Alert.alert("Copied!", `${item.tokenId} copied to clipboard.`);
+              Alert.alert("Copied!", `${item.tokenId} copied to clipboard`);
             }}
           >
             <Text className="text-xs text-green-500">
@@ -60,7 +66,6 @@ const CheckinCard = ({ item }: any) => {
           </TouchableOpacity>
         </View>
       </View>
-
       <View className="bg-gray-100 p-1 rounded-sm">
         <View className="flex-row justify-between">
           <Text className="text-sm text-gray-700 capitalize">
@@ -83,7 +88,7 @@ const CheckinCard = ({ item }: any) => {
           </View>
           <View className="flex-row justify-between">
             <Text className="text-sm text-gray-700">Total Paid</Text>
-            <Text className="text-sm font-semibold text-green-600">
+            <Text className="text-sm font-semibold text-gray-600">
               ₹{item.amount}
             </Text>
           </View>
@@ -93,41 +98,66 @@ const CheckinCard = ({ item }: any) => {
   );
 };
 
-const VehicleList = () => {
-  const Vehicles: Vehicle[] = [
-    { name: "All", value: "all", icon: "list-outline" },
-    { name: "Cycle", value: "cycle", icon: "bicycle-outline" },
-    { name: "Bike", value: "bike", icon: "car-sport-outline" },
-    { name: "Car", value: "car", icon: "car-outline" },
-    { name: "Van", value: "van", icon: "bus-outline" },
-    { name: "Bus", value: "bus", icon: "bus-outline" },
-  ];
+const VehicleScreen = () => {
+  const { staffId } = useLocalSearchParams();
+  const isFocused = useIsFocused();
 
-  const [checkType, setCheckType] = useState("checkins");
-  const { vehicleList, VehicleListData } = userAuthStore();
-  const [selected, setSelected] = useState("all");
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState("all");
+  const [checkType, setCheckType] = useState("checkins");
   const [filterDate, setFilterDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleList = async (vehicle: string, type = checkType) => {
-    setLoading(true);
-    const result = await vehicleList(vehicle, type);
-    if (!result.success) Alert.alert("Error", result.error);
-    setLoading(false);
+  const {
+    isLoading,
+    VehicleListData,
+    checkins,
+    checkouts,
+    fetchCheckins,
+    fetchCheckouts,
+    vehicleList,
+  } = userAuthStore();
+
+  const handleList = async (type: string) => {
+    if (checkType === "checkins") {
+      await fetchCheckins(type, staffId);
+    } else if (checkType === "checkouts") {
+      await fetchCheckouts(type, staffId);
+    } else {
+      await vehicleList(type, "vehicleList", staffId);
+    }
   };
 
   useEffect(() => {
-    handleList("all");
-  }, []);
+    if (isFocused) {
+      handleList(selected);
+    }
+  }, [isFocused, checkType, selected]);
 
-  useEffect(() => {
-    handleList(selected, checkType);
-  }, [checkType]);
+  const getDataToShow = () => {
+    if (checkType === "checkins") return checkins;
+    if (checkType === "checkouts") return checkouts;
+    return VehicleListData;
+  };
+
+  const dataToDisplay = getDataToShow();
+
+  const filteredData = dataToDisplay?.filter((item: any) => {
+    const matchesSearch =
+      item.vehicleNo.toLowerCase().includes(search.toLowerCase()) ||
+      item.name.toLowerCase().includes(search.toLowerCase());
+
+    const matchesDate = filterDate
+      ? format(new Date(item.entryDateTime), "yyyy-MM-dd") ===
+        format(filterDate, "yyyy-MM-dd")
+      : true;
+
+    return matchesSearch && matchesDate;
+  });
 
   return (
-    <View className="flex-1 bg-[#F3F4F6] px-4 py-4 gap-3">
+    <SafeAreaView className="flex-1 bg-[#F3F4F6] px-4 py-4 gap-3">
+      {/* 🔍 Search */}
       <View className="bg-white flex-row px-2 items-center rounded-sm">
         <Ionicons name="search-outline" size={24} />
         <TextInput
@@ -138,11 +168,11 @@ const VehicleList = () => {
         />
       </View>
 
-      <View className="bg-white justify-center items-center w-full shadow-sm rounded-sm p-2 flex-wrap overflow-scroll">
+      {/* 🚗 Vehicle Filter */}
+      <View className="bg-white justify-center items-center w-full shadow-sm rounded-sm p-2">
         <View className="justify-center items-center mb-2">
           <Text className="text-2xl font-semibold">Vehicles</Text>
         </View>
-
         <FlatList
           data={Vehicles}
           horizontal
@@ -178,15 +208,13 @@ const VehicleList = () => {
         />
       </View>
 
+      {/* 🧾 Filter Row */}
       <View className="flex-row items-center gap-2">
         <View className="flex-1">
-          <Picker
-            selectedValue={checkType}
-            onValueChange={setCheckType}
-            className="h-14 shadow-sm rounded-sm outline-none"
-          >
+          <Picker selectedValue={checkType} onValueChange={(val) => setCheckType(val)}>
             <Picker.Item label="Check In" value="checkins" />
             <Picker.Item label="Check Out" value="checkouts" />
+            <Picker.Item label="Vehicle List" value="list" />
           </Picker>
         </View>
         <TouchableOpacity
@@ -199,6 +227,7 @@ const VehicleList = () => {
         </TouchableOpacity>
       </View>
 
+      {/* 📅 Date Picker */}
       {showDatePicker && (
         <DateTimePicker
           value={filterDate || new Date()}
@@ -213,26 +242,16 @@ const VehicleList = () => {
         />
       )}
 
+      {/* 🚘 Vehicle Data */}
       <View className="flex-1 bg-white">
-        {loading ? (
+        {isLoading ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#10B981" />
             <Text className="mt-2 text-gray-500">Loading Vehicles...</Text>
           </View>
-        ) : VehicleListData && VehicleListData.length > 0 ? (
+        ) : filteredData && filteredData.length > 0 ? (
           <FlatList
-            data={Array.from(VehicleListData).filter((item) => {
-              const matchesSearch =
-                item.vehicleNo.toLowerCase().includes(search.toLowerCase()) ||
-                item.name.toLowerCase().includes(search.toLowerCase());
-
-              const matchesDate = filterDate
-                ? format(new Date(item.entryDateTime), "yyyy-MM-dd") ===
-                  format(filterDate, "yyyy-MM-dd")
-                : true;
-
-              return matchesSearch && matchesDate;
-            })}
+            data={filteredData}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => <CheckinCard item={item} />}
             showsVerticalScrollIndicator={false}
@@ -246,8 +265,8 @@ const VehicleList = () => {
           </View>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
-export default VehicleList;
+export default VehicleScreen;

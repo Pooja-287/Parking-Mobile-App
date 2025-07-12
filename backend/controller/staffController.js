@@ -3,63 +3,34 @@ import VehicleCheckin from '../model/checkin.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs'
 
-// 🔐 Create a staff (by admin)
 
-// const createStaff = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
-//     const adminId = req.user._id; // assuming admin is logged in
-
-//     if (!username || !password) {
-//       return res.status(400).json({ message: "Username and password are required" });
-//     }
-
-//     const existing = await Staff.findOne({ username });
-//     if (existing) {
-//       return res.status(400).json({ message: "Username already exists" });
-//     }
-
-//     // ✅ Hash the password before saving
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const newStaff = new Staff({
-//       username,
-//       password: hashedPassword,
-//       role: 'staff', // Optional but useful
-//       createdBy: adminId
-//     });
-
-//     await newStaff.save();
-
-//     res.status(201).json({ message: "Staff created successfully", staff: newStaff });
-
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal Server Error", error: error.message });
-//   }
-// };
 
 const createStaff = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const adminId = req.user._id;
+    const { username, password, permissions = [] } = req.body;
+    const adminId = req.user._id; // ✅ Extracting admin ID from logged-in admin
 
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password are required" });
     }
 
+    // Check for existing username
     const existing = await Staff.findOne({ username });
     if (existing) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new staff document
     const newStaff = new Staff({
       username,
-      password,                // ✅ Store plain text (optional)
-      hashedPassword,          // ✅ Store hash for login
-      role: 'staff',
-      createdBy: adminId
+      password,                // Only for development/debug; remove in production
+      hashedPassword,
+      role: "staff",
+      adminId,        
+      permissions
     });
 
     await newStaff.save();
@@ -69,7 +40,8 @@ const createStaff = async (req, res) => {
       staff: {
         _id: newStaff._id,
         username: newStaff.username,
-        password: newStaff.password  // ✅ Send plain password if needed
+        password: newStaff.password,
+        permissions: newStaff.permissions
       }
     });
 
@@ -79,15 +51,27 @@ const createStaff = async (req, res) => {
 };
 
 
-// 👀 Admin: View all staff
+
+
+
+
+
+
+
 const getAllStaffs = async (req, res) => {
   try {
-    const staffs = await Staff.find({ createdBy: req.user._id }).select("+password"); 
+    const adminId = req.user._id; // Logged-in admin's ID
+
+    const staffs = await Staff.find({ adminId }).select('-hashedPassword');
+
     res.status(200).json({ staffs });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch staffs", error: error.message });
+    res.status(500).json({ message: 'Failed to fetch staff users', error: error.message });
   }
 };
+
+
+
 
 
 // 👨‍🔧 Staff: View today’s check-in/checkout
@@ -192,6 +176,89 @@ const deleteStaff = async (req, res) => {
 };
 
 
+ const smartGetStaffPermissions = async (req, res) => {
+  const { role, _id } = req.user;
+  const { staffId } = req.params;
+
+  if (role === "staff" && !staffId) {
+    const staff = await Staff.findById(_id);
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    return res.status(200).json({ staffId: staff._id, username: staff.username, permissions: staff.permissions });
+  }
+
+  if (role === "admin" && staffId) {
+    const staff = await Staff.findById(staffId);
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    return res.status(200).json({ staffId: staff._id, username: staff.username, permissions: staff.permissions });
+  }
+
+  return res.status(403).json({ message: "Access denied" });
+};
+
+
+
+const setStaffPermissions = async (req, res) => {
+  try {
+    const { staffId, permissions } = req.body;
+
+    if (!staffId || !Array.isArray(permissions)) {
+      return res.status(400).json({ message: "Staff ID and permissions array are required" });
+    }
+
+    const staff = await Staff.findById(staffId);
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    staff.permissions = permissions;
+    await staff.save();
+
+    res.status(200).json({
+      message: "Permissions set successfully",
+      staff: {
+        _id: staff._id,
+        username: staff.username,
+        permissions: staff.permissions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error setting permissions", error: error.message });
+  }
+};
+
+const updateStaffPermissions = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ message: "Permissions must be an array" });
+    }
+
+    const staff = await Staff.findByIdAndUpdate(
+      staffId,
+      { permissions },
+      { new: true }
+    );
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    res.status(200).json({
+      message: "Permissions updated successfully",
+      staff: {
+        _id: staff._id,
+        username: staff.username,
+        permissions: staff.permissions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating permissions", error: error.message });
+  }
+};
+
+
 
 
 
@@ -203,5 +270,8 @@ export default {
   getStaffTodayVehicles,
   getStaffTodayRevenue,
   updateStaff,
-  deleteStaff
+  deleteStaff,
+smartGetStaffPermissions,
+  setStaffPermissions,
+  updateStaffPermissions,
 };
