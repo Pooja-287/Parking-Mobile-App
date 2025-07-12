@@ -16,6 +16,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 
 import userAuthStore from "@/utils/store";
+import { Toast } from "toastify-react-native";
 
 type Vehicle = {
   name: string;
@@ -47,7 +48,7 @@ const CheckinCard = ({ item }: any) => {
           </Text>
         </View>
         <View className="flex-row justify-center items-center gap-1">
-          <Text className="text-xs text-gray-500">{item.vehicleNo}</Text>
+          <Text className="text-md text-gray-500">{item.vehicleNo}</Text>
           <TouchableOpacity
             onPress={() => {
               Clipboard.setStringAsync(item.tokenId);
@@ -114,7 +115,7 @@ const VehicleList = () => {
   const handleList = async (vehicle: string, type = checkType) => {
     setLoading(true);
     const result = await vehicleList(vehicle, type);
-    if (!result.success) Alert.alert("Error", result.error);
+    if (!result.success) Toast.error("Error in API");
     setLoading(false);
   };
 
@@ -191,9 +192,9 @@ const VehicleList = () => {
         </View>
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
-          className="bg-blue-100 px-3 py-2 rounded shadow-sm"
+          className="bg-green-100 px-3 py-2 rounded shadow-sm"
         >
-          <Text className="text-sm text-blue-800">
+          <Text className="text-sm">
             {filterDate ? format(filterDate, "MMM dd, yyyy") : "Pick Date"}
           </Text>
         </TouchableOpacity>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
 import useAuthStore from "../utils/store";
+import ToastManager, { Toast } from "toastify-react-native";
 
 // Types
 type VehiclePrices = {
@@ -44,8 +45,15 @@ const CheckIn = () => {
   };
 
   const handleSubmit = async () => {
-    if (!name || !vehicleNo || !mobile) {
-      Alert.alert("Fill all fields");
+    if (!vehicleNo || !mobile) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "All fields are required",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
       return;
     }
 
@@ -61,11 +69,23 @@ const CheckIn = () => {
     );
 
     if (!result.success) {
-      Alert.alert("Error", result.error || "Check-in failed");
-      return;
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: result.error || "Check In Failed",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     }
+    Toast.show({
+      type: "success",
+      text1: "Check In Success",
+      position: "top",
+      visibilityTime: 4000,
+      autoHide: true,
+    });
 
-    Alert.alert(" Success", "Vehicle checked in");
     clearForm();
   };
 
@@ -142,6 +162,7 @@ const CheckIn = () => {
           <Text className="text-lg text-white">Enter</Text>
         </TouchableOpacity>
       </View>
+      <ToastManager showCloseIcon={false} />
     </View>
   );
 };

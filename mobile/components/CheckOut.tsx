@@ -3,6 +3,7 @@ import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Scan from "./Scan";
 import userAuthStore from "@/utils/store";
+import ToastManager, { Toast } from "toastify-react-native";
 
 const CheckOut = () => {
   const [Toscan, setToscan] = useState(false);
@@ -11,18 +12,37 @@ const CheckOut = () => {
 
   const handleSubmit = async () => {
     if (!tokenId) {
-      Alert.alert("Enter the Token ID");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Enter the Token ID",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
       return;
     }
 
     const result = await checkOut(tokenId);
 
     if (!result.success) {
-      Alert.alert("Error", result.error || "Check-out failed");
-      return;
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: result.error || "Check-out failed",
+        position: "top",
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     }
+    Toast.show({
+      type: "success",
+      text1: "Vehicle Checked out",
+      position: "top",
+      visibilityTime: 4000,
+      autoHide: true,
+    });
 
-    Alert.alert("✅ Success", "Vehicle checked out");
     settokenId("");
   };
 
@@ -60,6 +80,7 @@ const CheckOut = () => {
           <Text className="text-lg text-white">Enter</Text>
         </TouchableOpacity>
       </View>
+      <ToastManager showCloseIcon={false} />
     </View>
   );
 };

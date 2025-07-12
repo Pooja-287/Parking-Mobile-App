@@ -16,9 +16,18 @@ const router = express.Router();
 router.post("/api/checkin", verifyToken,vehicleController.Checkin);
 router.post("/api/checkout", verifyToken, vehicleController.Checkout);
 router.post("/api/checkins", verifyToken, vehicleController.getCheckins);
+<<<<<<< HEAD
 router.post("/api/checkouts", verifyToken,vehicleController.getCheckouts);
 router.get("/api/checkins", verifyToken, vehicleController.getCheckins);
 router.get("/api/checkouts", verifyToken,vehicleController.getCheckouts);
+=======
+router.post("/api/checkouts", verifyToken, vehicleController.getCheckouts);
+router.get(
+  "/api/getTodayVehicle",
+  verifyToken,
+  vehicleController.getTodayVehicle
+);
+>>>>>>> 85595f2549757111d0e84c417625275ed4d70655
 
 // New routes
 router.get(

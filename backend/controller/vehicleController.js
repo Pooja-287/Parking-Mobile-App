@@ -294,7 +294,123 @@ const Checkin = async (req, res) => {
     });
   } catch (error) {
     console.error("Check-in error:", error);
+<<<<<<< HEAD
     res.status(500).json({
+=======
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+const Checkout = async (req, res) => {
+  try {
+    const { tokenId, user } = req.body;
+    const userId = req.user.username;
+
+    if (!tokenId) {
+      return res.status(400).json({ message: "tokenId is required" });
+    }
+    if (!user) {
+      return res.status(400).json({ message: "User is required" });
+    }
+
+    const vehicle = await VehicleCheckin.findOne({ tokenId });
+
+    if (!vehicle) {
+      return res
+        .status(404)
+        .json({ message: "No check-in found with this tokenId" });
+    }
+
+    if (vehicle.isCheckedOut) {
+      return res.status(400).json({
+        message: "Vehicle is already checked out",
+        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
+      });
+    }
+
+    const exitTime = new Date();
+    const entryTime = new Date(vehicle.entryDateTime);
+    const timeDiffMs = exitTime - entryTime;
+    const userRole = user.role;
+    const checkInBy = user.id;
+    let adminId = "";
+
+    if (userRole === "admin") {
+      adminId = checkInBy;
+    } else {
+      const staff = await Staff.findById(user.id);
+      if (!staff) {
+        return res.status(400).json({ message: "Staff not found" });
+      }
+      adminId = staff.createdBy;
+    }
+
+    const priceData = await Price.findOne({ adminId: req.user._id });
+
+    if (!priceData) {
+      return res.status(404).json({ message: "No pricing info found" });
+    }
+
+    const price = priceData.vehicle[vehicle.vehicleType];
+
+    if (!price) {
+      return res
+        .status(404)
+        .json({ message: `No price found for ${vehicle.vehicleType}` });
+    }
+
+    let totalAmount = 0;
+    let readableDuration = "";
+    const minutesUsed = timeDiffMs / (1000 * 60);
+
+    if (priceData.priceType === "perHour") {
+      const pricePerMinute = priceData.price / 60;
+      totalAmount = parseFloat((minutesUsed * pricePerMinute).toFixed(2));
+
+      readableDuration =
+        minutesUsed >= 1
+          ? `${Math.floor(minutesUsed)} min${
+              Math.floor(minutesUsed) > 1 ? "s" : ""
+            }`
+          : `${Math.round(timeDiffMs / 1000)} sec`;
+    } else if (priceData.priceType === "perDay") {
+      const days = timeDiffMs / (1000 * 60 * 60 * 24);
+      const fullDays = Math.ceil(days);
+      totalAmount = fullDays * priceData.price;
+      readableDuration = `${fullDays} day${fullDays > 1 ? "s" : ""}`;
+    }
+
+    vehicle.CheckOutTime = exitTime;
+    vehicle.totalAmount = totalAmount;
+    vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
+    vehicle.isCheckedOut = true;
+    vehicle.checkOutBy = userId;
+
+    await vehicle.save();
+
+    res.status(200).json({
+      message: "Vehicle checked out successfully",
+      receipt: {
+        name: vehicle.name,
+        mobileNumber: vehicle.mobile,
+        vehicleType: vehicle.vehicleType,
+        numberPlate: vehicle.vehicleNo,
+        table: {
+          entryTime: entryTime.toLocaleTimeString(),
+          exitTime: exitTime.toLocaleTimeString(),
+          timeUsed: readableDuration,
+          priceType: priceData.priceType,
+          price: `₹${priceData.price}`,
+          amountPaid: `₹${totalAmount}`,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Checkout error:", error);
+    return res.status(500).json({
+>>>>>>> 85595f2549757111d0e84c417625275ed4d70655
       message: "Internal Server Error",
       error: error.message,
     });
@@ -572,7 +688,84 @@ const getVehicleList = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
 
+=======
+const getTodayVehicle = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const checkins = await VehicleCheckin.find({
+      checkInBy: userId,
+      isCheckedOut: false,
+      entryDateTime: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    const checkouts = await VehicleCheckin.find({
+      checkInBy: userId,
+      isCheckedOut: true,
+      entryDateTime: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    const allData = await VehicleCheckin.find({
+      checkInBy: userId,
+      $or: [
+        { entryDateTime: { $gte: startOfToday, $lte: endOfToday } },
+        { CheckOutTime: { $gte: startOfToday, $lte: endOfToday } },
+      ],
+    });
+
+    const checkinsCount = checkins.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+
+    const checkoutsCount = checkouts.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+    const allDataCount = allData.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + 1;
+      return acc;
+    }, {});
+
+    const allDataTotalMoney = allData.reduce((acc, curr) => {
+      acc[curr.vehicleType] = (acc[curr.vehicleType] || 0) + curr.amount;
+      return acc;
+    }, {});
+    const moneyByPaymentMethod = allData.reduce((acc, curr) => {
+      acc[curr.paymentMethod] = (acc[curr.paymentMethod] || 0) + curr.amount;
+      return acc;
+    }, {});
+    const vehicleStats = {
+      checkinsCount,
+      checkoutsCount,
+      allDataCount,
+      money: allDataTotalMoney,
+      PaymentMethod: moneyByPaymentMethod,
+      fullData: {
+        checkins,
+        checkouts,
+        allData,
+      },
+    };
+
+    res.status(200).json(vehicleStats);
+  } catch (error) {
+    console.error("getTodayVehicleReport error:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+>>>>>>> 85595f2549757111d0e84c417625275ed4d70655
 
 const getVehicleById = async (req, res) => {
   try {
@@ -818,6 +1011,7 @@ export default {
   getCheckins,
   getCheckouts,
   getVehicleList,
+  getTodayVehicle,
   getVehicleById,
   getVehicleByToken,
   getVehicleByNumberPlate,
