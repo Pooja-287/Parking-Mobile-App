@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-=======
 import { Dimensions, Text, View, ScrollView, FlatList } from "react-native";
 import React, { useEffect, useState } from "react";
 import { ProgressChart } from "react-native-chart-kit";
@@ -101,13 +97,8 @@ const TodayReport = () => {
     setVehicleList(vehicleList);
     console.log(PaymentMethod);
   }, []);
->>>>>>> 85595f2549757111d0e84c417625275ed4d70655
 
   return (
-<<<<<<< HEAD
-    <View>
-      <Text>todayReport</Text>
-=======
     <View className="flex-1 bg-[#F3F4F6]">
       <View className="my-4 mx-4 bg-white justify-center items-center py-4 shadow-sm">
         <Text className="text-xl font-semibold">Today Report</Text>
@@ -135,7 +126,7 @@ const TodayReport = () => {
                 data={vehicleList}
                 keyExtractor={(item) => item.vehicle}
                 ListHeaderComponent={() => (
-                  <View className="flex-row justify-around py-2 border-b border-gray-200">
+                  <View className="flex-row justify-around bg-green-300 py-2 border-b border-gray-200">
                     <Text className="w-1/5 text-center font-bold">Vehicle</Text>
                     <Text className="w-1/5 text-center font-bold">IN</Text>
                     <Text className="w-1/5 text-center font-bold">Out</Text>
@@ -191,15 +182,8 @@ const TodayReport = () => {
           </View>
         </View>
       </ScrollView>
->>>>>>> 85595f2549757111d0e84c417625275ed4d70655
     </View>
-  )
-}
+  );
+};
 
-<<<<<<< HEAD
-export default todayReport
-
-const styles = StyleSheet.create({})
-=======
 export default TodayReport;
->>>>>>> 85595f2549757111d0e84c417625275ed4d70655

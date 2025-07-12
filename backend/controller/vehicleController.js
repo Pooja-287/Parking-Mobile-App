@@ -294,27 +294,24 @@ const Checkin = async (req, res) => {
     });
   } catch (error) {
     console.error("Check-in error:", error);
-<<<<<<< HEAD
-    res.status(500).json({
-=======
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+
+    
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
+
+
 const Checkout = async (req, res) => {
   try {
-    const { tokenId, user } = req.body;
-    const userId = req.user.username;
+    const { tokenId } = req.body;
+    const user = req.user; // ✅ From JWT middleware
 
     if (!tokenId) {
       return res.status(400).json({ message: "tokenId is required" });
     }
-    if (!user) {
-      return res.status(400).json({ message: "User is required" });
-    }
 
+    // 1. Find check-in record
     const vehicle = await VehicleCheckin.findOne({ tokenId });
 
     if (!vehicle) {
@@ -326,70 +323,61 @@ const Checkout = async (req, res) => {
     if (vehicle.isCheckedOut) {
       return res.status(400).json({
         message: "Vehicle is already checked out",
-        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
+        exitTimeIST: convertToISTString(vehicle.exitDateTime),
       });
     }
 
+    // 2. Get adminId from JWT middleware
+    const userRole = user.role;
+    const userId = user._id;
+    const adminId = userRole === "admin" ? userId : user.adminId;
+
+    // 3. Get pricing info
+    const priceData = await Price.findOne({ adminId });
+
+    if (!priceData) {
+      return res.status(404).json({ message: "No pricing info found for this admin" });
+    }
+
+    const vehicleType = vehicle.vehicleType;
+    const price = priceData.vehicle[vehicleType];
+
+    if (!price) {
+      return res.status(404).json({ message: `No price found for ${vehicleType}` });
+    }
+
+    // 4. Calculate charges
     const exitTime = new Date();
     const entryTime = new Date(vehicle.entryDateTime);
     const timeDiffMs = exitTime - entryTime;
-    const userRole = user.role;
-    const checkInBy = user.id;
-    let adminId = "";
-
-    if (userRole === "admin") {
-      adminId = checkInBy;
-    } else {
-      const staff = await Staff.findById(user.id);
-      if (!staff) {
-        return res.status(400).json({ message: "Staff not found" });
-      }
-      adminId = staff.createdBy;
-    }
-
-    const priceData = await Price.findOne({ adminId: req.user._id });
-
-    if (!priceData) {
-      return res.status(404).json({ message: "No pricing info found" });
-    }
-
-    const price = priceData.vehicle[vehicle.vehicleType];
-
-    if (!price) {
-      return res
-        .status(404)
-        .json({ message: `No price found for ${vehicle.vehicleType}` });
-    }
+    const minutesUsed = timeDiffMs / (1000 * 60);
 
     let totalAmount = 0;
     let readableDuration = "";
-    const minutesUsed = timeDiffMs / (1000 * 60);
 
     if (priceData.priceType === "perHour") {
-      const pricePerMinute = priceData.price / 60;
-      totalAmount = parseFloat((minutesUsed * pricePerMinute).toFixed(2));
-
-      readableDuration =
-        minutesUsed >= 1
-          ? `${Math.floor(minutesUsed)} min${
-              Math.floor(minutesUsed) > 1 ? "s" : ""
-            }`
-          : `${Math.round(timeDiffMs / 1000)} sec`;
+      const pricePerMinute = price / 60;
+      const chargeableMinutes = Math.max(1, Math.ceil(minutesUsed));
+      totalAmount = parseFloat((chargeableMinutes * pricePerMinute).toFixed(2));
+      readableDuration = `${chargeableMinutes} minute${chargeableMinutes > 1 ? "s" : ""}`;
     } else if (priceData.priceType === "perDay") {
       const days = timeDiffMs / (1000 * 60 * 60 * 24);
-      const fullDays = Math.ceil(days);
-      totalAmount = fullDays * priceData.price;
-      readableDuration = `${fullDays} day${fullDays > 1 ? "s" : ""}`;
+      const chargeableDays = Math.max(1, Math.ceil(days));
+      totalAmount = chargeableDays * price;
+      readableDuration = `${chargeableDays} day${chargeableDays > 1 ? "s" : ""}`;
     }
 
-    vehicle.CheckOutTime = exitTime;
+    // 5. Update check-out details
+    vehicle.exitDateTime = exitTime;
     vehicle.totalAmount = totalAmount;
     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
     vehicle.isCheckedOut = true;
-    vehicle.checkOutBy = userId;
+    vehicle.checkedOutBy = user.username;
+    vehicle.checkedOutByRole = userRole;
 
     await vehicle.save();
 
+    // 6. Return response
     res.status(200).json({
       message: "Vehicle checked out successfully",
       receipt: {
@@ -402,7 +390,7 @@ const Checkout = async (req, res) => {
           exitTime: exitTime.toLocaleTimeString(),
           timeUsed: readableDuration,
           priceType: priceData.priceType,
-          price: `₹${priceData.price}`,
+          price: `₹${price}`,
           amountPaid: `₹${totalAmount}`,
         },
       },
@@ -410,12 +398,13 @@ const Checkout = async (req, res) => {
   } catch (error) {
     console.error("Checkout error:", error);
     return res.status(500).json({
->>>>>>> 85595f2549757111d0e84c417625275ed4d70655
       message: "Internal Server Error",
       error: error.message,
     });
   }
 };
+
+
 
 
 
@@ -529,47 +518,47 @@ const Checkout = async (req, res) => {
 // };
 
 
-const Checkout = async (req, res) => {
-  try {
-    const { tokenId } = req.body;
-    const user = req.user; // ✅ From JWT middleware
+// const Checkout = async (req, res) => {
+//   try {
+//     const { tokenId } = req.body;
+//     const user = req.user; // ✅ From JWT middleware
 
-    if (!tokenId) {
-      return res.status(400).json({ message: "tokenId is required" });
-    }
+//     if (!tokenId) {
+//       return res.status(400).json({ message: "tokenId is required" });
+//     }
 
-    const vehicle = await VehicleCheckin.findOne({ tokenId, isCheckedOut: false });
+//     const vehicle = await VehicleCheckin.findOne({ tokenId, isCheckedOut: false });
 
-    if (!vehicle) {
-      return res.status(404).json({ message: "No active check-in found for this tokenId" });
-    }
+//     if (!vehicle) {
+//       return res.status(404).json({ message: "No active check-in found for this tokenId" });
+//     }
 
-    const checkoutTime = new Date();
-    const checkinTime = vehicle.createdAt;
-    const daysStayed = moment(checkoutTime).diff(moment(checkinTime), 'days') || 1;
+//     const checkoutTime = new Date();
+//     const checkinTime = vehicle.createdAt;
+//     const daysStayed = moment(checkoutTime).diff(moment(checkinTime), 'days') || 1;
 
-    const totalAmount = daysStayed * vehicle.perDayRate;
+//     const totalAmount = daysStayed * vehicle.perDayRate;
 
-    vehicle.isCheckedOut = true;
-    vehicle.checkedOutAt = checkoutTime;
-    vehicle.totalAmount = totalAmount;
-    vehicle.daysStayed = daysStayed;
-    vehicle.checkedOutBy = user._id;
+//     vehicle.isCheckedOut = true;
+//     vehicle.checkedOutAt = checkoutTime;
+//     vehicle.totalAmount = totalAmount;
+//     vehicle.daysStayed = daysStayed;
+//     vehicle.checkedOutBy = user._id;
 
-    await vehicle.save();
+//     await vehicle.save();
 
-    return res.status(200).json({
-      message: `Vehicle ${vehicle.vehicleNo} checked out successfully`,
-      checkedOutAt: convertToISTString(checkoutTime),
-      totalAmount,
-      daysStayed,
-    });
+//     return res.status(200).json({
+//       message: `Vehicle ${vehicle.vehicleNo} checked out successfully`,
+//       checkedOutAt: convertToISTString(checkoutTime),
+//       totalAmount,
+//       daysStayed,
+//     });
 
-  } catch (error) {
-    console.error("Checkout error:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
-  }
-};
+//   } catch (error) {
+//     console.error("Checkout error:", error);
+//     res.status(500).json({ message: "Internal Server Error", error: error.message });
+//   }
+// };
 
 // const getCheckins = async (req, res) => {
 //   try {
@@ -688,9 +677,6 @@ const getVehicleList = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-
-=======
 const getTodayVehicle = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -765,7 +751,7 @@ const getTodayVehicle = async (req, res) => {
     });
   }
 };
->>>>>>> 85595f2549757111d0e84c417625275ed4d70655
+
 
 const getVehicleById = async (req, res) => {
   try {

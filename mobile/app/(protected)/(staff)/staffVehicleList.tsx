@@ -120,11 +120,11 @@ const VehicleScreen = () => {
 
   const handleList = async (type: string) => {
     if (checkType === "checkins") {
-      await fetchCheckins(type, staffId);
+      await fetchCheckins(type, staffId as string);
     } else if (checkType === "checkouts") {
-      await fetchCheckouts(type, staffId);
+      await fetchCheckouts(type, staffId as string);
     } else {
-      await vehicleList(type, "vehicleList", staffId);
+      await vehicleList(type, "vehicleList", staffId as string);
     }
   };
 
@@ -134,18 +134,26 @@ const VehicleScreen = () => {
     }
   }, [isFocused, checkType, selected]);
 
-  const getDataToShow = () => {
-    if (checkType === "checkins") return checkins;
-    if (checkType === "checkouts") return checkouts;
-    return VehicleListData;
-  };
+  // const getDataToShow = () => {
+  //   if (checkType === "checkins") return checkins;
+  //   if (checkType === "checkouts") return checkouts;
+  //   return VehicleListData;
+  // };
 
+const getDataToShow = () => {
+  if (checkType === "checkins") return Array.isArray(checkins) ? checkins : [];
+  if (checkType === "checkouts") return Array.isArray(checkouts) ? checkouts : [];
+  return Array.isArray(VehicleListData) ? VehicleListData : [];
+};
+
+  
+  
   const dataToDisplay = getDataToShow();
 
   const filteredData = dataToDisplay?.filter((item: any) => {
     const matchesSearch =
-      item.vehicleNo.toLowerCase().includes(search.toLowerCase()) ||
-      item.name.toLowerCase().includes(search.toLowerCase());
+      item.vehicleNo?.toLowerCase().includes(search.toLowerCase()) ||
+      item.name?.toLowerCase().includes(search.toLowerCase());
 
     const matchesDate = filterDate
       ? format(new Date(item.entryDateTime), "yyyy-MM-dd") ===
