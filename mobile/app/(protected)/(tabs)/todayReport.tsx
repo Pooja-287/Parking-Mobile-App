@@ -126,7 +126,7 @@ const TodayReport = () => {
                 data={vehicleList}
                 keyExtractor={(item) => item.vehicle}
                 ListHeaderComponent={() => (
-                  <View className="flex-row justify-around py-2 border-b border-gray-200">
+                  <View className="flex-row justify-around bg-green-300 py-2 border-b border-gray-200">
                     <Text className="w-1/5 text-center font-bold">Vehicle</Text>
                     <Text className="w-1/5 text-center font-bold">IN</Text>
                     <Text className="w-1/5 text-center font-bold">Out</Text>

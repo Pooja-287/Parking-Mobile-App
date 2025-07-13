@@ -3,6 +3,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BASE_URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
 
+interface FormData {
+  name: string;
+  vehicleNo: string;
+  mobile: string;
+  vehicleType: string;
+  duration: string;
+  startDate: string;
+  endDate: string;
+  paymentMethod: string;
+  amount?: number;
+  transactionId?: string;
+}
+
 interface VehicleData {
   checkins: any[];
   checkouts: any[];
@@ -27,6 +40,8 @@ interface UserAuthState extends VehicleData {
   isLoading: boolean;
   isLogged: boolean;
   staffs: any[];
+  monthlyPassActive: any[] | null;
+  monthlyPassExpired: any[] | null;
 
   signup: (
     username: string,
@@ -64,10 +79,21 @@ interface UserAuthState extends VehicleData {
     updates: { username?: string; password?: string }
   ) => Promise<ApiResponse>;
   deleteStaff: (staffId: string) => Promise<ApiResponse>;
+  MonthlyPassPrices: Record<string, number>;
+  createMonthlyPass: (formData: FormData) => Promise<ApiResponse>;
+  getMonthlyPass: (param: any) => Promise<ApiResponse>;
+  extendMonthlyPass: (passId: string, months: number) => Promise<ApiResponse>;
 }
 
 const userAuthStore = create<UserAuthState>((set, get) => ({
   user: null,
+  MonthlyPassPrices: {
+    "0": 0,
+    "3": 300,
+    "6": 550,
+    "9": 800,
+    "12": 1000,
+  },
   token: null,
   prices: {},
   VehicleListData: [],
@@ -81,6 +107,8 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
   fullData: [],
   VehicleTotalMoney: [],
   PaymentMethod: [],
+  monthlyPassActive: [],
+  monthlyPassExpired: [],
 
   loadPricesIfNotSet: async () => {
     const stored = get().prices;
@@ -384,6 +412,106 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  },
+  createMonthlyPass: async (formData) => {
+    set({ isLoading: true });
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      if (!token) throw new Error("No token found");
+
+      const res = await fetch(`${BASE_URL}api/createMonthlyPass`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          vehicleNo: formData.vehicleNo,
+          mobile: formData.mobile,
+          startDate: formData.startDate,
+          duration: formData.duration,
+          endDate: formData.endDate,
+          amount:
+            formData.amount || get().MonthlyPassPrices[formData.duration] || 0,
+          paymentMode: formData.paymentMethod,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.message || "Failed to create monthly pass");
+
+      set({ isLoading: false });
+      return { success: true, pass: data.pass, qrCode: data.qrCode };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message };
+    }
+  },
+  getMonthlyPass: async (param) => {
+    set({ isLoading: true });
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      if (!token) throw new Error("No token found");
+
+      const res = await fetch(`${BASE_URL}api/getMontlyPass/${param}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.message || "Failed to create monthly pass");
+
+      set({ isLoading: false });
+
+      if (param == "active") {
+        set({ monthlyPassActive: data });
+      } else if (param == "expired") {
+        set({ monthlyPassExpired: data });
+      }
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message };
+    }
+  },
+  extendMonthlyPass: async (passId: string, months: number) => {
+    const setState = set;
+    setState({ isLoading: true });
+
+    try {
+      const token = get().token || (await AsyncStorage.getItem("token"));
+      if (!token) throw new Error("No token found");
+
+      const res = await fetch(`${BASE_URL}api/extendPass/${passId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ months }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to extend pass");
+      }
+
+      // Refresh active passes
+      await get().getMonthlyPass("active");
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    } finally {
+      setState({ isLoading: false });
     }
   },
 }));

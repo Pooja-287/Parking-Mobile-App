@@ -100,12 +100,10 @@
 // <Tabs.Screen name="(staff)/create" options={{ href: null }} />
 // <Tabs.Screen name="updateProfile" options={{ href: null }} />
 
-
 //       </Tabs>
 //     </SafeAreaView>
 //   );
 // }
-
 
 // app/(tabs)/_layout.tsx
 
@@ -201,10 +199,6 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="staffs" options={{ href: null }} />
         <Tabs.Screen name="updateProfile" options={{ href: null }} />
-        {/* <Tabs.Screen name="staff" options={{href: null}} /> */}
-
-        {/* ❌ Don't add staff routes like (staff)/create here */}
-        {/* Those are handled in (staff)/_layout.tsx */}
       </Tabs>
     </SafeAreaView>
   );
