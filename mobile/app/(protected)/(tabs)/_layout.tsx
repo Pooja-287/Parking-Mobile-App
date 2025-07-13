@@ -199,6 +199,15 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="staffs" options={{ href: null }} />
         <Tabs.Screen name="updateProfile" options={{ href: null }} />
+<<<<<<< HEAD
+=======
+        <Tabs.Screen name="priceDetails" options={{href: null}} />
+        {/* <Tabs.Screen name="staffPermissions" options={{href: null}} /> */}
+        {/* <Tabs.Screen name="staff" options={{href: null}} /> */}
+
+        {/* ❌ Don't add staff routes like (staff)/create here */}
+        {/* Those are handled in (staff)/_layout.tsx */}
+>>>>>>> 31f5df2f9f3ee42be12ff9e9ead76ce9496c9563
       </Tabs>
     </SafeAreaView>
   );

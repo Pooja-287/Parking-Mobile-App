@@ -4,6 +4,16 @@ import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import Staff from "../model/staff.js";
 import mongoose from "mongoose";
+import moment from "moment";
+
+const convertToISTString = (date) => {
+  const istDate = new Date(date).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+  });
+  return istDate;
+};
+
+
 
 const Checkin = async (req, res) => {
   try {
@@ -14,17 +24,17 @@ const Checkin = async (req, res) => {
       mobile,
       paymentMethod,
       days,
-      amount,
-      user,
     } = req.body;
 
+    const user = req.user;
+
     if (
+      !name ||
       !vehicleType ||
       !vehicleNo ||
       !mobile ||
       !paymentMethod ||
-      !days ||
-      !amount
+      !days
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -38,19 +48,27 @@ const Checkin = async (req, res) => {
     }
 
     const userRole = user.role;
-    const checkInBy = user.id;
+    const checkInBy = user._id;
     let adminId = "";
 
     if (userRole === "admin") {
       adminId = checkInBy;
     } else {
-      const staff = await Staff.findById(user.id);
-      if (!staff) {
-        return res.status(400).json({ message: "Staff not found" });
-      }
-      adminId = staff.createdBy;
+      adminId = user.adminId;
     }
 
+    // ✅ Check if price is already added for this vehicleType by this admin
+    const priceDoc = await Price.findOne({ adminId });
+
+    if (!priceDoc || !priceDoc.vehicle[vehicleType] || priceDoc.vehicle[vehicleType] === "0") {
+      return res.status(400).json({
+        message: `Please add price for ${vehicleType} before checking in.`,
+      });
+    }
+
+    const rate = Number(priceDoc.vehicle[vehicleType]);
+
+    // ✅ Check if vehicle is already checked in
     const alreadyCheckedIn = await VehicleCheckin.findOne({
       vehicleNo: cleanedPlate,
       isCheckedOut: false,
@@ -74,9 +92,9 @@ const Checkin = async (req, res) => {
       mobile,
       paymentMethod,
       days,
-      perDayRate: amount,
+      perDayRate: rate,
       paidDays: days,
-      amount,
+      amount: rate * days,
       adminId,
       checkInBy,
       tokenId,
@@ -86,32 +104,30 @@ const Checkin = async (req, res) => {
 
     await newCheckin.save();
 
-    // await sendCheckInQR(qrCode, tokenId, mobile);
-
     return res.status(201).json({
       message: "Vehicle checked in successfully",
       tokenId,
     });
   } catch (error) {
     console.error("Check-in error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+
+    
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
+
+
 const Checkout = async (req, res) => {
   try {
-    const { tokenId, user } = req.body;
-    const userId = req.user.username;
+    const { tokenId } = req.body;
+    const user = req.user; // ✅ From JWT middleware
 
     if (!tokenId) {
       return res.status(400).json({ message: "tokenId is required" });
     }
-    if (!user) {
-      return res.status(400).json({ message: "User is required" });
-    }
 
+    // 1. Find check-in record
     const vehicle = await VehicleCheckin.findOne({ tokenId });
 
     if (!vehicle) {
@@ -123,70 +139,61 @@ const Checkout = async (req, res) => {
     if (vehicle.isCheckedOut) {
       return res.status(400).json({
         message: "Vehicle is already checked out",
-        exitTimeIST: convertToISTString(vehicle.CheckOutTime),
+        exitTimeIST: convertToISTString(vehicle.exitDateTime),
       });
     }
 
+    // 2. Get adminId from JWT middleware
+    const userRole = user.role;
+    const userId = user._id;
+    const adminId = userRole === "admin" ? userId : user.adminId;
+
+    // 3. Get pricing info
+    const priceData = await Price.findOne({ adminId });
+
+    if (!priceData) {
+      return res.status(404).json({ message: "No pricing info found for this admin" });
+    }
+
+    const vehicleType = vehicle.vehicleType;
+    const price = priceData.vehicle[vehicleType];
+
+    if (!price) {
+      return res.status(404).json({ message: `No price found for ${vehicleType}` });
+    }
+
+    // 4. Calculate charges
     const exitTime = new Date();
     const entryTime = new Date(vehicle.entryDateTime);
     const timeDiffMs = exitTime - entryTime;
-    const userRole = user.role;
-    const checkInBy = user.id;
-    let adminId = "";
-
-    if (userRole === "admin") {
-      adminId = checkInBy;
-    } else {
-      const staff = await Staff.findById(user.id);
-      if (!staff) {
-        return res.status(400).json({ message: "Staff not found" });
-      }
-      adminId = staff.createdBy;
-    }
-
-    const priceData = await Price.findOne({ adminId: req.user._id });
-
-    if (!priceData) {
-      return res.status(404).json({ message: "No pricing info found" });
-    }
-
-    const price = priceData.vehicle[vehicle.vehicleType];
-
-    if (!price) {
-      return res
-        .status(404)
-        .json({ message: `No price found for ${vehicle.vehicleType}` });
-    }
+    const minutesUsed = timeDiffMs / (1000 * 60);
 
     let totalAmount = 0;
     let readableDuration = "";
-    const minutesUsed = timeDiffMs / (1000 * 60);
 
     if (priceData.priceType === "perHour") {
-      const pricePerMinute = priceData.price / 60;
-      totalAmount = parseFloat((minutesUsed * pricePerMinute).toFixed(2));
-
-      readableDuration =
-        minutesUsed >= 1
-          ? `${Math.floor(minutesUsed)} min${
-              Math.floor(minutesUsed) > 1 ? "s" : ""
-            }`
-          : `${Math.round(timeDiffMs / 1000)} sec`;
+      const pricePerMinute = price / 60;
+      const chargeableMinutes = Math.max(1, Math.ceil(minutesUsed));
+      totalAmount = parseFloat((chargeableMinutes * pricePerMinute).toFixed(2));
+      readableDuration = `${chargeableMinutes} minute${chargeableMinutes > 1 ? "s" : ""}`;
     } else if (priceData.priceType === "perDay") {
       const days = timeDiffMs / (1000 * 60 * 60 * 24);
-      const fullDays = Math.ceil(days);
-      totalAmount = fullDays * priceData.price;
-      readableDuration = `${fullDays} day${fullDays > 1 ? "s" : ""}`;
+      const chargeableDays = Math.max(1, Math.ceil(days));
+      totalAmount = chargeableDays * price;
+      readableDuration = `${chargeableDays} day${chargeableDays > 1 ? "s" : ""}`;
     }
 
-    vehicle.CheckOutTime = exitTime;
+    // 5. Update check-out details
+    vehicle.exitDateTime = exitTime;
     vehicle.totalAmount = totalAmount;
     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
     vehicle.isCheckedOut = true;
-    vehicle.checkOutBy = userId;
+    vehicle.checkedOutBy = user.username;
+    vehicle.checkedOutByRole = userRole;
 
     await vehicle.save();
 
+    // 6. Return response
     res.status(200).json({
       message: "Vehicle checked out successfully",
       receipt: {
@@ -199,7 +206,7 @@ const Checkout = async (req, res) => {
           exitTime: exitTime.toLocaleTimeString(),
           timeUsed: readableDuration,
           priceType: priceData.priceType,
-          price: `₹${priceData.price}`,
+          price: `₹${price}`,
           amountPaid: `₹${totalAmount}`,
         },
       },
@@ -213,57 +220,55 @@ const Checkout = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
 const getCheckins = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { vehicle } = req.body;
+    const userId = req.query.staffId || req.user._id; // ✅ Use staffId if passed
+    const { vehicle } = req.query;
 
-    let checkins;
+    let query = {
+      isCheckedOut: false,
+      checkInBy: userId,
+    };
 
-    if (vehicle === "all") {
-      checkins = await VehicleCheckin.find({
-        isCheckedOut: false,
-        checkInBy: userId,
-      }).sort({ entryDateTime: -1 });
-    } else {
-      checkins = await VehicleCheckin.find({
-        vehicleType: vehicle,
-        isCheckedOut: false,
-        checkInBy: userId,
-      }).sort({ entryDateTime: -1 });
+    if (vehicle && vehicle !== "all") {
+      query.vehicleType = vehicle;
     }
+
+    const checkins = await VehicleCheckin.find(query).sort({ entryDateTime: -1 });
 
     res.status(200).json({
       count: checkins.length,
       vehicle: checkins,
     });
   } catch (error) {
-    console.error("getCheckins error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
 const getCheckouts = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { vehicle } = req.body;
+  const userId = req.query.staffId || req.user._id;
 
-    let checkouts;
+    const { vehicle } = req.query; // ✅ FIXED
 
-    if (vehicle === "all") {
-      checkouts = await VehicleCheckin.find({
-        isCheckedOut: true,
-        checkInBy: userId,
-      }).sort({ exitDateTime: -1 });
-    } else {
-      checkouts = await VehicleCheckin.find({
-        vehicleType: vehicle,
-        isCheckedOut: true,
-        checkInBy: userId,
-      }).sort({ exitDateTime: -1 });
+    let query = {
+      isCheckedOut: true,
+      checkInBy: userId,
+    };
+
+    if (vehicle && vehicle !== "all") {
+      query.vehicleType = vehicle;
     }
+
+    const checkouts = await VehicleCheckin.find(query).sort({
+      exitDateTime: -1,
+    });
 
     res.status(200).json({
       count: checkouts.length,
@@ -271,25 +276,25 @@ const getCheckouts = async (req, res) => {
     });
   } catch (error) {
     console.error("getCheckouts error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
+
 
 const getVehicleList = async (req, res) => {
   try {
     const { isCheckedOut, vehicleType, numberPlate } = req.query;
     const userId = req.user._id;
 
-    const query = { createdBy: userId };
+    const query = { checkInBy: userId }; // ✅ Correct field name
 
     if (isCheckedOut === "true") query.isCheckedOut = true;
     else if (isCheckedOut === "false") query.isCheckedOut = false;
 
     if (vehicleType) query.vehicleType = vehicleType;
     if (numberPlate)
-      query.vehicleNumber = numberPlate.toUpperCase().replace(/\s/g, "");
+      query.vehicleNo = numberPlate.toUpperCase().replace(/\s/g, "");
 
     const vehicles = await VehicleCheckin.find(query).sort({
       entryDateTime: -1,
@@ -382,10 +387,12 @@ const getTodayVehicle = async (req, res) => {
   }
 };
 
+
 const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+  const userId = req.query.staffId || req.user._id;
+
     const userRole = req.user.role;
 
     let query = { _id: id };

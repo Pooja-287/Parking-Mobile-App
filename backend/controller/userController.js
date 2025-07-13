@@ -66,29 +66,52 @@ const updatePrice = async (req, res) => {
   }
 };
 
+// const getPrice = async (req, res) => {
+//   try {
+//     const adminId = req.user?._id;
+
+//     if (!adminId) {
+//       return res.status(400).json({ message: "Admin Id required" });
+//     }
+
+//     const Prices = await Price.findOne({
+//       adminId,
+//     });
+
+//     if (!Prices) {
+//       return res
+//         .status(404)
+//         .json({ message: "Price not found or not owned by this admin" });
+//     }
+
+//     res.status(200).json(Prices);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 const getPrice = async (req, res) => {
   try {
-    const adminId = req.user?._id;
+    const user = req.user;
+    const adminId = user.role === "admin" ? user._id : user.adminId;
 
     if (!adminId) {
-      return res.status(400).json({ message: "Admin Id required" });
+      return res.status(400).json({ message: "Admin ID is required" });
     }
 
-    const Prices = await Price.findOne({
-      adminId,
-    });
+    const priceDoc = await Price.findOne({ adminId });
 
-    if (!Prices) {
-      return res
-        .status(404)
-        .json({ message: "Price not found or not owned by this admin" });
+    if (!priceDoc) {
+      return res.status(404).json({ message: "Price not found for the admin" });
     }
 
-    res.status(200).json(Prices);
+    res.status(200).json(priceDoc);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Error in getPrice:", error.message);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 
 const registerAdmin = async (req, res) => {
   try {
@@ -192,7 +215,10 @@ const loginUser = async (req, res) => {
         role,
         email: user.email || null,
         profileImage: user.profileImage || null,
+        // Permissions: user.Permissions || []
+         permissions: user.permissions, // ✅ Must be added
       },
+
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -297,6 +323,8 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
+
+
 export default {
   addPrice,
   updatePrice,
@@ -308,4 +336,5 @@ export default {
   updateAdmin,
   deleteAdmin,
   viewProfile,
+  
 };

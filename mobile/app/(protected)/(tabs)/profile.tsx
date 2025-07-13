@@ -42,6 +42,16 @@ const AccountSettings = () => {
           Account
         </Text>
       </TouchableOpacity>
+      <TouchableOpacity
+  className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
+  onPress={() => router.push("/priceDetails")}
+>
+  <Ionicons name="pricetag-outline" size={30} color="#2d6a4f" />
+  <Text className="ml-3 text-xl font-semibold text-green-800">
+    Price Details
+  </Text>
+</TouchableOpacity>
+
 
       {/* Staff List Button */}
 <TouchableOpacity

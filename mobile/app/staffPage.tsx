@@ -19,7 +19,7 @@ const AccountSettings = () => {
       {/* ✅ Staff List Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/AllStaffsScreen")}
+        onPress={() => router.push("/(protected)/(staff)/AllStaffsScreen")}
       >
         <Ionicons name="people-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -30,7 +30,7 @@ const AccountSettings = () => {
       {/* ✅ Create Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/create")}
+        onPress={() => router.push("/(protected)/(staff)/create")}
       >
         <Ionicons name="person-add-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -41,7 +41,7 @@ const AccountSettings = () => {
       {/* ✅ Today Vehicle Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/todayVehicle")}
+        onPress={() => router.push("/(protected)/(staff)/todayVehicle")}
       >
         <Ionicons name="car-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -52,7 +52,7 @@ const AccountSettings = () => {
       {/* ✅ Today Revenue Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/todayRevenue")}
+        onPress={() => router.push("/(protected)/(staff)/todayRevenue")}
       >
         <Ionicons name="cash-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -63,18 +63,18 @@ const AccountSettings = () => {
       {/* ✅ Update Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push('/staff/priceDetails')}
+        onPress={() => router.push('/(protected)/(staff)/allStaffs')}
       >
         <Ionicons name="create-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
-        priceDetails
+       AllStaffs
         </Text>
       </TouchableOpacity>
 
       {/* ✅ Delete Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/staff/vehicleList")}
+        onPress={() => router.push("/(protected)/(staff)/vehicleList")}
       >
         <Ionicons name="trash-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
