@@ -108,25 +108,27 @@ const VehicleScreen = () => {
   const [filterDate, setFilterDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const {
-    isLoading,
-    VehicleListData,
-    checkins,
-    checkouts,
-    fetchCheckins,
-    fetchCheckouts,
-    vehicleList,
-  } = userAuthStore();
+const {
+  isLoading,
+  VehicleListData,
+  checkins,
+  checkouts,
+  fetchCheckins,
+  fetchCheckouts,
+  vehicleList,
+} = userAuthStore((state) => state);
 
-  const handleList = async (type: string) => {
-    if (checkType === "checkins") {
-      await fetchCheckins(type, staffId as string);
-    } else if (checkType === "checkouts") {
-      await fetchCheckouts(type, staffId as string);
-    } else {
-      await vehicleList(type, "vehicleList", staffId as string);
-    }
-  };
+
+const handleList = async (type: string) => {
+  if (checkType === "checkins") {
+    await fetchCheckins(type, staffId as string); // ✅ Pass staffId
+  } else if (checkType === "checkouts") {
+    await fetchCheckouts(type, staffId as string); // ✅ Pass staffId
+  } else {
+    await vehicleList(type, "vehicleList", staffId as string);
+  }
+};
+
 
   useEffect(() => {
     if (isFocused) {

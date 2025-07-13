@@ -34,14 +34,7 @@ interface UserAuthState extends Partial<VehicleData>  {
   isLogged: boolean;
   staffs: any[];
   permissions: string[];
-   // ✅ Add missing VehicleData fields to the user type
-  // allData: any[];
-  // fullData: any[];
-  // PaymentMethod: any[];
-  // VehicleTotalMoney: any[];
-  // checkins: any[];
-  // checkouts: any[];
-
+ 
 
 
   fetchCheckins: (vehicle: string) => Promise<void>;
@@ -132,128 +125,7 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
     }
   },
 
-  // login: async (username, password) => {
-  //   try {
-  //     set({ isLoading: true });
-  //     const res = await fetch(`${URL}api/loginUser`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ username, password }),
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok) throw new Error(data.message);
-
-  //     const correctedUser = {
-  //       ...data.user,
-  //       _id: data.user._id || data.user.id,
-  //       role: data.user.role || "user",
-  //     };
-
-  //     await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-  //     await AsyncStorage.setItem("token", data.token);
-     
-  //     set({
-  //       user: correctedUser,
-  //       token: data.token,
-  //       isLoading: false,
-  //       isLogged: true,
-  //       permissions: data.permissions,
-  //     });
-
-  //     await get().getPrices();
-
-  //     return { success: true };
-  //   } catch (err: any) {
-  //     set({ isLoading: false });
-  //     return { success: false, error: err.message };
-  //   }
-  // },
-
-  // getPrices: async () => {
-  //   try {
-  //     const token = get().token || (await AsyncStorage.getItem("token"));
-  //     const res = await fetch(`${URL}api/getPrices`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok) throw new Error(data.message);
-  //     set({ prices: data.vehicle });
-  //     return { success: true };
-  //   } catch (err: any) {
-  //     return { success: false, error: err.message };
-  //   }
-  // },
-
   
-  
-  
-//   login: async (username, password) => {
-//   try {
-//     set({ isLoading: true });
-
-//     // Step 1: Authenticate user
-//     const res = await fetch(`${URL}api/loginUser`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ username, password }),
-//     });
-
-//     const data = await res.json();
-//     if (!res.ok) throw new Error(data.message);
-
-//     // Step 2: Structure user object
-//     const correctedUser = {
-//       ...data.user,
-//       _id: data.user._id || data.user.id,
-//       role: data.user.role || "user",
-//     };
-
-//     // Step 3: Save user/token locally
-//     await AsyncStorage.setItem("user", JSON.stringify(correctedUser));
-//     await AsyncStorage.setItem("token", data.token);
-
-//     // Step 4: Get today's vehicle count
-//     get().getTodayVehicles();
-
-//     // Step 5: Get vehicle prices (calls the function below)
-//     await get().getPrices();
-
-//     // Step 6: Update Zustand state
-//     set({
-//       user: correctedUser,
-//       token: data.token,
-//       isLoading: false,
-//       isLogged: true,
-//       permissions: data.permissions || [],
-//     });
-
-//     return { success: true };
-//   } catch (err: any) {
-//     set({ isLoading: false });
-//     return { success: false, error: err.message };
-//   }
-// },
-// getPrices: async () => {
-//   try {
-//     const token = get().token || (await AsyncStorage.getItem("token"));
-
-//     const res = await fetch(`${URL}api/getPrices`, {
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//     });
-
-//     const data = await res.json();
-//     if (!res.ok) throw new Error(data.message);
-
-//     set({ prices: data.vehicle });
-//     return { success: true };
-//   } catch (err: any) {
-//     return { success: false, error: err.message };
-//   }
-// },
-
 
   login: async (username, password) => {
   try {
@@ -405,65 +277,6 @@ fetchCheckouts: async (vehicle = "all", staffId = "") => {
 
 
 
-
-// vehicleList: async (vehicle, checkType, staffId) => {
-//   try {
-//     set({ isLoading: true });
-//     const token = await AsyncStorage.getItem("token");
-
-//     const res = await fetch(`${URL}api/${checkType}`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: JSON.stringify({ vehicle, staffId }), // ✅ send staffId
-//     });
-
-//     const data = await res.json();
-//     if (!res.ok) throw new Error(data.message);
-
-//     set({ VehicleListData: data.vehicle });
-//     return { success: true };
-//   } catch (err: any) {
-//     return { success: false, error: err.message };
-//   } finally {
-//     set({ isLoading: false });
-//   }
-// },
-
-
-
-  // fetchCheckins: async (vehicle = "all") => {
-  //   try {
-  //     set({ isLoading: true });
-  //     const token = get().token || (await AsyncStorage.getItem("token"));
-  //     const res = await axios.get(`${URL}api/checkins?vehicle=${vehicle}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     set({ checkins: res.data.vehicle });
-  //   } catch {
-  //     set({ checkins: [] });
-  //   } finally {
-  //     set({ isLoading: false });
-  //   }
-  // },
-
-  // fetchCheckouts: async (vehicle = "all") => {
-  //   try {
-  //     set({ isLoading: true });
-  //     const token = get().token || (await AsyncStorage.getItem("token"));
-  //     const res = await axios.get(`${URL}api/checkouts?vehicle=${vehicle}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     set({ checkouts: res.data.vehicle });
-  //   } catch {
-  //     set({ checkouts: [] });
-  //   } finally {
-  //     set({ isLoading: false });
-  //   }
-  // },
-
  vehicleList: async (vehicle: string, checkType: string, staffId = "") => {
   set({ isLoading: true });
   try {
@@ -492,61 +305,64 @@ fetchCheckouts: async (vehicle = "all", staffId = "") => {
 },
 
 
-  checkIn: async (name, vehicleNo, vehicleType, mobile, paymentMethod, days, amount) => {
-    try {
-      set({ isLoading: true });
-      const token = await AsyncStorage.getItem("token");
-      const user = await AsyncStorage.getItem("user");
-      const res = await fetch(`${URL}api/checkin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          vehicleNo,
-          vehicleType,
-          mobile,
-          paymentMethod,
-          days,
-          amount,
-          user: JSON.parse(user || ""),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  checkIn: async (name, vehicleNo, vehicleType, mobile, paymentMethod, days) => {
+  try {
+    set({ isLoading: true });
+    const token = await AsyncStorage.getItem("token");
 
-  checkOut: async (tokenId) => {
-    try {
-      set({ isLoading: true });
-      const token = await AsyncStorage.getItem("token");
-      const user = await AsyncStorage.getItem("user");
-      const res = await fetch(`${URL}api/checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ tokenId, user: JSON.parse(user || "") }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+    const res = await fetch(`${URL}api/checkin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name,
+        vehicleNo,
+        vehicleType,
+        mobile,
+        paymentMethod,
+        days,
+      }),
+    });
 
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    return { success: true, tokenId: data.tokenId };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+checkOut: async (tokenId) => {
+  try {
+    set({ isLoading: true });
+    const token = await AsyncStorage.getItem("token");
+
+    const res = await fetch(`${URL}api/checkout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ tokenId }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    return { success: true, receipt: data.receipt };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+  
   getAllStaffs: async () => {
     try {
       set({ isLoading: true });
