@@ -1,9 +1,9 @@
-import { Text, View } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 
 const dashboard = () => {
   return (
-    <View className="flex-1">
+    <View>
       <Text>dashboard</Text>
     </View>
   );
