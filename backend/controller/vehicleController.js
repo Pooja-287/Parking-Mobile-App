@@ -1,9 +1,11 @@
 import VehicleCheckin from "../model/checkin.js";
 import Price from "../model/price.js";
+import uploadQR from "../utils/ImageLinker.js";
 import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import Staff from "../model/staff.js";
 import mongoose from "mongoose";
+import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";
 
 const convertToISTString = (date) => {
   const istDate = new Date(date).toLocaleString("en-IN", {
@@ -48,7 +50,6 @@ const Checkin = async (req, res) => {
       adminId = user.adminId;
     }
 
-    // ✅ Check if price is already added for this vehicleType by this admin
     const priceDoc = await Price.findOne({ adminId });
 
     if (
@@ -63,7 +64,6 @@ const Checkin = async (req, res) => {
 
     const rate = Number(priceDoc.vehicle[vehicleType]);
 
-    // ✅ Check if vehicle is already checked in
     const alreadyCheckedIn = await VehicleCheckin.findOne({
       vehicleNo: cleanedPlate,
       isCheckedOut: false,
@@ -79,7 +79,6 @@ const Checkin = async (req, res) => {
 
     const tokenId = uuidv4();
     const qrCode = await QRCode.toDataURL(tokenId);
-
     const newCheckin = new VehicleCheckin({
       name,
       vehicleNo: cleanedPlate,
@@ -96,7 +95,9 @@ const Checkin = async (req, res) => {
       qrCode,
       isCheckedOut: false,
     });
-
+    const recipientNumber = `91${mobile}`;
+    const imageUrl = await uploadQR(qrCode);
+    // await sendWhatsAppTemplate(recipientNumber, imageUrl, tokenId);
     await newCheckin.save();
 
     return res.status(201).json({
