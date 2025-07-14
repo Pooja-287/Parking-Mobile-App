@@ -1,282 +1,254 @@
 import {
-  Dimensions,
-  Text,
-  View,
-  ScrollView,
+  Alert,
   FlatList,
+  Text,
   TouchableOpacity,
+  View,
+  ActivityIndicator,
+  TextInput,
   Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { ProgressChart } from "react-native-chart-kit";
+import * as Clipboard from "expo-clipboard";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 
-const screenWidth = Dimensions.get("window").width;
-const chartWidth = screenWidth * 0.93;
+import userAuthStore from "@/utils/store";
+import { Toast } from "toastify-react-native";
 
-const chartConfig = {
-  backgroundGradientFrom: "#ffffff",
-  backgroundGradientTo: "#ffffff",
-  color: (opacity = 1) => `rgba(0, 200, 83, ${opacity})`,
-  strokeWidth: 2,
-  barPercentage: 0,
-  useShadowColorFromDataset: false,
-  propsForBackgroundLines: {
-    stroke: "#e0e0e0",
-  },
+type Vehicle = {
+  name: string;
+  value: string;
+  icon: keyof typeof Ionicons.glyphMap;
 };
 
-const prepareChartData = (dataObject: any) => {
-  const types = Object.keys(dataObject);
-  const counts = Object.values(dataObject) as number[];
-
-  const labels = types.map((type, i) => `${counts[i]} ${type}`);
-  const max = Math.max(...counts, 1);
-  const normalizedData = counts.map((count) => count / max);
-
-  return {
-    labels,
-    data: normalizedData,
-  };
-};
-
-const ChartSection = ({ title, data }: any) => (
-  <View
-    style={{
-      width: screenWidth,
-      alignItems: "center",
-      paddingVertical: 10,
-    }}
-  >
-    <Text className="text-lg font-semibold mb-4">{title}</Text>
-    <View className="rounded-md shadow-green-200 shadow-md">
-      <ProgressChart
-        data={prepareChartData(data)}
-        width={chartWidth}
-        height={220}
-        strokeWidth={13}
-        radius={30}
-        chartConfig={chartConfig}
-        hideLegend={false}
-      />
-    </View>
-  </View>
-);
-
-const Dashboard = () => {
-  // Sample data for charts
-  const sampleData = {
-    checkins: {
-      Car: 15,
-      Bike: 25,
-      Truck: 5,
-    },
-    checkouts: {
-      Car: 12,
-      Bike: 20,
-      Truck: 3,
-    },
-    staffData: {
-      "Morning Shift": 8,
-      "Evening Shift": 6,
-      "Night Shift": 4,
-    },
-    revenueData: {
-      Parking: 12000,
-      MonthlyPass: 5000,
-      Fines: 2000,
-    },
-    monthlyPassData: {
-      Active: 30,
-      Expired: 5,
-      Pending: 10,
-    },
-    vehicleTypes: {
-      Car: 50,
-      Bike: 80,
-      Truck: 15,
-      Van: 10,
-    },
-  };
-
-  // State for date picker and income data
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [vehicleList, setVehicleList] = useState<
-    { vehicle: string; count: number }[]
-  >([]);
-  const [incomeData, setIncomeData] = useState<{
-    today: number;
-    yesterday: number;
-    monthly: number;
-  }>({ today: 15000, yesterday: 12000, monthly: 350000 });
-
-  // Function to generate sample income based on selected date
-  const generateIncomeData = (date: Date) => {
-    const day = date.getDate();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-
-    // Sample logic: Vary income based on day and month
-    const baseTodayIncome = 15000;
-    const baseYesterdayIncome = 12000;
-    const baseMonthlyIncome = 350000;
-
-    // Adjust income based on day and month for variation
-    const todayIncome = Math.round(baseTodayIncome + day * 150 - month * 200);
-    const yesterdayIncome = Math.round(
-      baseYesterdayIncome + (day - 1) * 150 - month * 200
-    );
-    const monthlyIncome = Math.round(
-      baseMonthlyIncome + month * 12000 - day * 1000
-    );
-
-    return {
-      today: Math.max(0, todayIncome),
-      yesterday: Math.max(0, yesterdayIncome),
-      monthly: Math.max(0, monthlyIncome),
-    };
-  };
-
-  useEffect(() => {
-    // Process vehicle types
-    const uniqueVehicleTypes = Array.from(
-      new Set([
-        ...Object.keys(sampleData.checkins),
-        ...Object.keys(sampleData.checkouts),
-        ...Object.keys(sampleData.vehicleTypes),
-      ])
-    );
-
-    const vehicleList = uniqueVehicleTypes.map((type: any) => ({
-      vehicle: type,
-      count: sampleData.vehicleTypes[type] || 0,
-    }));
-
-    // Update income data based on selected date
-    const income = generateIncomeData(selectedDate);
-
-    setVehicleList(vehicleList);
-    setIncomeData(income);
-  }, [selectedDate]);
+const CheckinCard = ({ item }: any) => {
+  const formattedDate = format(
+    new Date(item.entryDateTime),
+    "MMM d, yyyy - h:mm a"
+  );
 
   return (
-    <View className="flex-1 bg-[#F3F4F6]">
-      <View className="my-4 mx-4 bg-white justify-center items-center py-4 shadow-sm">
-        <Text className="text-xl font-semibold">Dashboard</Text>
-      </View>
-      <ScrollView>
-        {/* Date Picker Section */}
-        <View className="bg-white mx-4 mb-4">
-          <View className="p-2 flex-1 justify-center items-center">
-            <Text className="text-lg font-semibold mb-4">Select Date</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            className="bg-green-100 px-3 py-2 rounded shadow-sm mx-4"
+    <View className="bg-white shadow-lg rounded-md p-3 mx-4 mb-4 space-y-2">
+      <View className="flex-row justify-between items-center">
+        <View className="flex-row gap-2 justify-center items-center">
+          <Text className="text-lg font-semibold text-gray-900">
+            {item.name}
+          </Text>
+          <Text
+            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+              item.isCheckedOut
+                ? "bg-red-100 text-red-700"
+                : "bg-green-100 text-green-700"
+            }`}
           >
-            <Text className="text-sm text-center">
-              {format(selectedDate, "MMM dd, yyyy")}
+            {item.isCheckedOut ? "Checked Out" : "Active"}
+          </Text>
+        </View>
+        <View className="flex-row justify-center items-center gap-1">
+          <Text className="text-md text-gray-500">{item.vehicleNo}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              Clipboard.setStringAsync(item.tokenId);
+              Alert.alert("Copied!", ` ${item.tokenId} copied to clipboard.`);
+            }}
+          >
+            <Text className="text-xs text-green-500">
+              <Ionicons name="copy-outline" size={12} /> Token
             </Text>
           </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "inline" : "default"}
-              onChange={(event, newDate) => {
-                setShowDatePicker(false);
-                if (event.type === "set" && newDate) {
-                  setSelectedDate(newDate);
-                }
-              }}
-            />
-          )}
         </View>
+      </View>
 
-        {/* Chart Section */}
-        <View className="pb-4">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            <ChartSection
-              title="Check In/Out"
-              data={{ ...sampleData.checkins, ...sampleData.checkouts }}
-            />
-            <ChartSection title="Staff Activity" data={sampleData.staffData} />
-            <ChartSection title="Revenue" data={sampleData.revenueData} />
-            <ChartSection
-              title="Monthly Pass"
-              data={sampleData.monthlyPassData}
-            />
-          </ScrollView>
+      <View className="bg-gray-100 p-1 rounded-sm">
+        <View className="flex-row justify-between">
+          <Text className="text-sm text-gray-700 capitalize">
+            {item.vehicleType}
+          </Text>
+          <Text className="text-sm text-gray-500">{formattedDate}</Text>
         </View>
-
-        {/* Vehicle Information */}
-        <View className="bg-white mx-4 mb-4">
-          <View className="p-2 flex-1 justify-center items-center">
-            <Text className="text-lg font-semibold mb-4">
-              Vehicle Information
+        <View className="mt-1 space-y-1">
+          <View className="flex-row justify-between">
+            <Text className="text-sm text-gray-700">Paid Days</Text>
+            <Text className="text-sm font-medium text-gray-800">
+              {item.paidDays}
             </Text>
           </View>
-          <View className="pb-4">
-            {Array.isArray(vehicleList) && vehicleList.length > 0 ? (
-              <FlatList
-                data={vehicleList}
-                keyExtractor={(item) => item.vehicle}
-                ListHeaderComponent={() => (
-                  <View className="flex-row justify-around bg-green-300 py-2 border-b border-gray-200">
-                    <Text className="w-1/2 text-center font-bold">
-                      Vehicle Type
-                    </Text>
-                    <Text className="w-1/2 text-center font-bold">Count</Text>
-                  </View>
-                )}
-                renderItem={({ item }) => (
-                  <View className="flex-row justify-around py-2 border-b border-gray-100">
-                    <Text className="w-1/2 text-center">{item.vehicle}</Text>
-                    <Text className="w-1/2 text-center">{item.count}</Text>
-                  </View>
-                )}
-              />
-            ) : (
-              <Text className="text-center p-4 text-gray-500">
-                No vehicle data available
-              </Text>
-            )}
+          <View className="flex-row justify-between">
+            <Text className="text-sm text-gray-700">Rate</Text>
+            <Text className="text-sm font-medium text-gray-800">
+              ₹{(+item.perDayRate / +item.paidDays).toFixed(2)}/day
+            </Text>
+          </View>
+          <View className="flex-row justify-between">
+            <Text className="text-sm text-gray-700">Total Paid</Text>
+            <Text className="text-sm font-semibold text-green-600">
+              ₹{item.amount}
+            </Text>
           </View>
         </View>
-
-        {/* Income Information */}
-        <View className="bg-white mx-4">
-          <View className="p-2 flex-1 justify-center items-center">
-            <Text className="text-lg font-semibold mb-4">Income Summary</Text>
-          </View>
-          <View className="pb-4">
-            <View className="flex-row justify-around bg-green-300 py-2 border-b border-gray-200">
-              <Text className="w-1/3 text-center font-bold">Period</Text>
-              <Text className="w-1/3 text-center font-bold">Amount</Text>
-            </View>
-            <View className="flex-row justify-around py-2 border-b border-gray-100">
-              <Text className="w-1/3 text-center">Today</Text>
-              <Text className="w-1/3 text-center">₹{incomeData.today}</Text>
-            </View>
-            <View className="flex-row justify-around py-2 border-b border-gray-100">
-              <Text className="w-1/3 text-center">Yesterday</Text>
-              <Text className="w-1/3 text-center">₹{incomeData.yesterday}</Text>
-            </View>
-            <View className="flex-row justify-around py-2 border-b border-gray-100">
-              <Text className="w-1/3 text-center">Monthly</Text>
-              <Text className="w-1/3 text-center">₹{incomeData.monthly}</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+      </View>
     </View>
   );
 };
 
-export default Dashboard;
+const VehicleList = () => {
+  const Vehicles: Vehicle[] = [
+    { name: "All", value: "all", icon: "list-outline" },
+    { name: "Cycle", value: "cycle", icon: "bicycle-outline" },
+    { name: "Bike", value: "bike", icon: "car-sport-outline" },
+    { name: "Car", value: "car", icon: "car-outline" },
+    { name: "Van", value: "van", icon: "bus-outline" },
+    { name: "Bus", value: "bus", icon: "bus-outline" },
+  ];
+
+  const [checkType, setCheckType] = useState("checkins");
+  const { vehicleList, VehicleListData } = userAuthStore();
+  const [selected, setSelected] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const handleList = async (vehicle: string, type = checkType) => {
+    setLoading(true);
+    const result = await vehicleList(vehicle, type);
+    if (!result.success) Toast.error("Error in API");
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    handleList("all");
+  }, []);
+
+  useEffect(() => {
+    handleList(selected, checkType);
+  }, [checkType]);
+
+  return (
+    <View className="flex-1 bg-[#F3F4F6] px-4 py-4 gap-3">
+      <View className="bg-white flex-row px-2 items-center rounded-sm">
+        <Ionicons name="search-outline" size={24} />
+        <TextInput
+          placeholder="Search vehicle"
+          value={search}
+          onChangeText={setSearch}
+          className="rounded text-base flex-1 px-3 h-12 bg-white"
+        />
+      </View>
+
+      <View className="bg-white justify-center items-center w-full shadow-sm rounded-sm p-2 flex-wrap overflow-scroll">
+        <View className="justify-center items-center mb-2">
+          <Text className="text-2xl font-semibold">Vehicles</Text>
+        </View>
+
+        <FlatList
+          data={Vehicles}
+          horizontal
+          keyExtractor={(item) => item.value}
+          renderItem={({ item }) => {
+            const isSelected = selected === item.value;
+            return (
+              <TouchableOpacity
+                className={`mx-2 items-center justify-center px-3 py-1 rounded-lg ${
+                  isSelected ? "bg-green-600" : "bg-green-400"
+                }`}
+                onPress={() => {
+                  setSelected(item.value);
+                  handleList(item.value);
+                }}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={22}
+                  color={isSelected ? "#fff" : "#000"}
+                />
+                <Text
+                  className={`text-base ${
+                    isSelected ? "text-white" : "text-black"
+                  }`}
+                >
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+
+      <View className="flex-row items-center gap-2">
+        <View className="flex-1">
+          <Picker
+            selectedValue={checkType}
+            onValueChange={setCheckType}
+            className="h-14 shadow-sm rounded-sm outline-none"
+          >
+            <Picker.Item label="Check In" value="checkins" />
+            <Picker.Item label="Check Out" value="checkouts" />
+          </Picker>
+        </View>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          className="bg-green-100 px-3 py-2 rounded shadow-sm"
+        >
+          <Text className="text-sm">
+            {filterDate ? format(filterDate, "MMM dd, yyyy") : "Pick Date"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={filterDate || new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (event.type === "set" && selectedDate) {
+              setFilterDate(selectedDate);
+            }
+          }}
+        />
+      )}
+
+      <View className="flex-1 bg-white">
+        {loading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#10B981" />
+            <Text className="mt-2 text-gray-500">Loading Vehicles...</Text>
+          </View>
+        ) : VehicleListData && VehicleListData.length > 0 ? (
+          <FlatList
+            data={Array.from(VehicleListData).filter((item) => {
+              const matchesSearch =
+                item.vehicleNo.toLowerCase().includes(search.toLowerCase()) ||
+                item.name.toLowerCase().includes(search.toLowerCase());
+
+              const matchesDate = filterDate
+                ? format(new Date(item.entryDateTime), "yyyy-MM-dd") ===
+                  format(filterDate, "yyyy-MM-dd")
+                : true;
+
+              return matchesSearch && matchesDate;
+            })}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => <CheckinCard item={item} />}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 12 }}
+          />
+        ) : (
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-gray-500 text-base">
+              No vehicle data found
+            </Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+};
+
+export default VehicleList;

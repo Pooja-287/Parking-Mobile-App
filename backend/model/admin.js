@@ -1,34 +1,27 @@
-
-
-
-
-
-
 import mongoose from "mongoose";
 
 const adminSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
-  profileImage: 
-  { type: String } ,
+  profileImage: { type: String },
   role: {
     type: String,
-    enum: ['admin'],
-    default: 'admin'
-  }
+    enum: ["admin"],
+    default: "admin",
+  },
 });
 
-const Admin = mongoose.model('Admin', adminSchema);
+const Admin = mongoose.model("Admin", adminSchema);
 export default Admin;

@@ -134,6 +134,11 @@ router.post(
 router.get("/api/getMontlyPass/:id", verifyToken, passController.getMontlyPass);
 
 router.put("/api/extendPass/:id", verifyToken, passController.extendPass);
+router.get(
+  "/api/getDashboardData",
+  verifyToken,
+  userController.getDashboardData
+);
 
 export default router;
 
