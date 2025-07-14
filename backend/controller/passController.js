@@ -1,96 +1,49 @@
-// import monthlyPass from "../model/monthlyPass.js";
-// import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";
-
-//  const createMonthlyPass = async(req,res)=> {
-//     try {
-//     const{ name, vehicleNumber, mobileNumber, startDate, endDate, amount, paymentMode } = req.body;
-//     const pass = new monthlyPass({
-//         name, 
-//         vehicleNumber: vehicleNumber.toUpperCase().replace(/\s/g,''),
-//         mobileNumber,
-//         startDate,
-//         endDate,
-//         amount,
-//         paymentMode,
-//         createdBy: req.user._id
-//     });
-
-//     await pass.save();
-
-//     await sendWhatsAppTemplate(mobileNumber, 'monthly Pass Created', [
-//         name, 
-//         vehicleNumber,
-//         new Date(startDate).toDateString(),
-//         new Date(endDate).toDateString()
-//     ]);
-//       res.status(201).json({message: "Monthly pass Created", pass});
-// }  catch (err) {
-//     res.status(500) .json({message: "Error creating pass", error: err.message});
-// }
-// };
-
-// const renewMonthlyPass = async (req,res) => {
-//     try {
-//         const {id} = req.params;
-//         const {monthsToAdd, amount, paymentMode} = req.body;
-
-//         const pass = await monthlyPass.findById(id);
-//         if(!pass) return res.status(404). json({message: "Pass not Found"});
-
-//         const newEndDate = new Date(pass.endDate);
-//         newEndDate.setMonth(newEndDate.getMonth() + parseInt(monthsToAdd));
-
-
-//         pass.endDate = newEndDate;
-//         pass.amount += amount;
-//         pass.paymentMode = paymentMode;
-
-//         await pass.save();
-
-//         await sendWhatsAppTemplate(pass.mobileNumber, 'monthly_pass_created', [
-//             pass.name,
-//             pass.vehicleNumber,
-//             pass.startDate.toDateString(),
-//             pass.endDate.toDateString()
-//         ]);
-
-//         res.status(200).json({message: "Pass Renewed", pass});
-
-//     } catch(err) {
-//         res.status(500).json({message: "Error renewing pass", error: err.message});
-//     }
-// }
-
-
-// export default {
-//   createMonthlyPass,
-//   renewMonthlyPass
-// };
-
-
-
-
 import monthlyPass from "../model/monthlyPass.js";
 // import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";
 import QRCode from "qrcode";
 
-// ✅ CREATE Monthly Pass
 const createMonthlyPass = async (req, res) => {
   try {
     const {
       name,
-      vehicleNumber,
-      mobileNumber,
+      vehicleNo,
+      mobile,
       startDate,
+      duration,
       endDate,
       amount,
       paymentMode,
     } = req.body;
-    const upperPlate = vehicleNumber.toUpperCase().replace(/\s/g, "");
 
-    // ❗ Check for existing active pass
+    // Validate required fields
+    if (
+      !name ||
+      !vehicleNo ||
+      !mobile ||
+      !startDate ||
+      !duration ||
+      !endDate ||
+      !amount ||
+      !req.user?._id
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided" });
+    }
+
+    // Validate duration
+    if (![3, 6, 9, 12].includes(Number(duration))) {
+      return res
+        .status(400)
+        .json({ message: "Duration must be 3, 6, 9, or 12 months" });
+    }
+
+    // Normalize vehicleNo
+    const upperPlate = vehicleNo.toUpperCase().replace(/\s/g, "");
+
+    // Check for existing active pass
     const existing = await monthlyPass.findOne({
-      vehicleNumber: upperPlate,
+      vehicleNo: upperPlate,
       endDate: { $gte: new Date() },
       isExpired: false,
     });
@@ -101,33 +54,35 @@ const createMonthlyPass = async (req, res) => {
       });
     }
 
+    // Create new pass
     const pass = new monthlyPass({
       name,
-      vehicleNumber: upperPlate,
-      mobileNumber,
-      startDate,
-      endDate,
+      vehicleNo: upperPlate,
+      mobile,
+      startDate: new Date(startDate),
+      duration,
+      endDate: new Date(endDate),
       amount,
-      paymentMode,
+      paymentMode: paymentMode || "cash",
       createdBy: req.user._id,
+      isExpired: new Date(endDate) < new Date(),
     });
 
-    await pass.save(); // Save first to get _id
+    await pass.save();
 
-    // 🧾 Generate QR Code
-    const qrData = `MonthlyPass:${pass._id}`;
-    pass.qrCode = await QRCode.toDataURL(qrData);
-    await pass.save(); // Save QR
+    // Generate QR Code
+    const qrData = ` MonthlyPass:${pass._id}`;
+    const qrCode = await QRCode.toDataURL(qrData);
 
-    // 📩 Send WhatsApp Template
-    await sendWhatsAppTemplate(mobileNumber, "monthly_pass_created", [
-      name,
-      upperPlate,
-      new Date(startDate).toDateString(),
-      new Date(endDate).toDateString(),
-    ]);
+    // Send WhatsApp Template
+    // await sendWhatsAppTemplate(mobile, "monthly_pass_created", [
+    //   name,
+    //   upperPlate,
+    //   new Date(startDate).toDateString(),
+    //   new Date(endDate).toDateString(),
+    // ]);
 
-    res.status(201).json({ message: "Monthly pass created", pass });
+    res.status(201).json({ message: "Monthly pass created", pass, qrCode });
   } catch (err) {
     res
       .status(500)
@@ -135,40 +90,73 @@ const createMonthlyPass = async (req, res) => {
   }
 };
 
-// ✅ RENEW Monthly Pass
-const renewMonthlyPass = async (req, res) => {
+const getMontlyPass = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { monthsToAdd, amount, paymentMode } = req.body;
+    const userId = req.user._id;
+    const id = req.params.id;
+    let pass;
+    if (id == "expired") {
+      pass = await monthlyPass
+        .find({
+          createdBy: userId,
+          isExpired: true,
+        })
+        .sort({ createdAt: -1 });
+    } else if (id == "active") {
+      pass = await monthlyPass
+        .find({
+          createdBy: userId,
+          isExpired: false,
+        })
+        .sort({ createdAt: -1 });
+    }
+    if (!pass) return res.status(400).json({ message: "Invalid Parameter" });
+    return res.status(200).json(pass);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching pass", error: error.message });
+  }
+};
 
-    const pass = await monthlyPass.findById(id);
-    if (!pass) return res.status(404).json({ message: "Pass not found" });
+const extendPass = async (req, res) => {
+  try {
+    const { months } = req.body;
+    const passId = req.params.id;
 
-    const newEndDate = new Date(pass.endDate);
-    newEndDate.setMonth(newEndDate.getMonth() + parseInt(monthsToAdd));
+    if (!months || isNaN(months)) {
+      return res.status(400).json({ message: "Invalid months value" });
+    }
 
+    const pass = await monthlyPass.findById(passId);
+    if (!pass) {
+      return res.status(404).json({ message: "Pass not found" });
+    }
+
+    const now = new Date();
+    const currentEndDate = new Date(pass.endDate);
+
+    // If the pass is already expired, start extension from today
+    const baseDate = currentEndDate < now ? now : currentEndDate;
+    const newEndDate = new Date(
+      baseDate.setMonth(baseDate.getMonth() + parseInt(months))
+    );
+
+    pass.duration += parseInt(months);
     pass.endDate = newEndDate;
-    pass.amount += amount;
-    pass.paymentMode = paymentMode;
+    pass.isExpired = false;
 
     await pass.save();
 
-    await sendWhatsAppTemplate(pass.mobileNumber, "monthly_pass_created", [
-      pass.name,
-      pass.vehicleNumber,
-      pass.startDate.toDateString(),
-      pass.endDate.toDateString(),
-    ]);
-
-    res.status(200).json({ message: "Pass renewed", pass });
+    res.status(200).json({ message: "Pass extended successfully", pass });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error renewing pass", error: err.message });
+    console.error("Extension error:", err);
+    res.status(500).json({ message: "Extension failed", error: err.message });
   }
 };
 
 export default {
   createMonthlyPass,
-  renewMonthlyPass,
+  getMontlyPass,
+  extendPass,
 };

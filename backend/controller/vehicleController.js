@@ -4,7 +4,6 @@ import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import Staff from "../model/staff.js";
 import mongoose from "mongoose";
-import moment from "moment";
 
 const convertToISTString = (date) => {
   const istDate = new Date(date).toLocaleString("en-IN", {
@@ -13,18 +12,10 @@ const convertToISTString = (date) => {
   return istDate;
 };
 
-
-
 const Checkin = async (req, res) => {
   try {
-    const {
-      name,
-      vehicleNo,
-      vehicleType,
-      mobile,
-      paymentMethod,
-      days,
-    } = req.body;
+    const { name, vehicleNo, vehicleType, mobile, paymentMethod, days } =
+      req.body;
 
     const user = req.user;
 
@@ -60,7 +51,11 @@ const Checkin = async (req, res) => {
     // ✅ Check if price is already added for this vehicleType by this admin
     const priceDoc = await Price.findOne({ adminId });
 
-    if (!priceDoc || !priceDoc.vehicle[vehicleType] || priceDoc.vehicle[vehicleType] === "0") {
+    if (
+      !priceDoc ||
+      !priceDoc.vehicle[vehicleType] ||
+      priceDoc.vehicle[vehicleType] === "0"
+    ) {
       return res.status(400).json({
         message: `Please add price for ${vehicleType} before checking in.`,
       });
@@ -111,17 +106,16 @@ const Checkin = async (req, res) => {
   } catch (error) {
     console.error("Check-in error:", error);
 
-    
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
-
-
 
 const Checkout = async (req, res) => {
   try {
     const { tokenId } = req.body;
-    const user = req.user; // ✅ From JWT middleware
+    const user = req.user;
 
     if (!tokenId) {
       return res.status(400).json({ message: "tokenId is required" });
@@ -152,14 +146,18 @@ const Checkout = async (req, res) => {
     const priceData = await Price.findOne({ adminId });
 
     if (!priceData) {
-      return res.status(404).json({ message: "No pricing info found for this admin" });
+      return res
+        .status(404)
+        .json({ message: "No pricing info found for this admin" });
     }
 
     const vehicleType = vehicle.vehicleType;
     const price = priceData.vehicle[vehicleType];
 
     if (!price) {
-      return res.status(404).json({ message: `No price found for ${vehicleType}` });
+      return res
+        .status(404)
+        .json({ message: `No price found for ${vehicleType}` });
     }
 
     // 4. Calculate charges
@@ -175,12 +173,16 @@ const Checkout = async (req, res) => {
       const pricePerMinute = price / 60;
       const chargeableMinutes = Math.max(1, Math.ceil(minutesUsed));
       totalAmount = parseFloat((chargeableMinutes * pricePerMinute).toFixed(2));
-      readableDuration = `${chargeableMinutes} minute${chargeableMinutes > 1 ? "s" : ""}`;
+      readableDuration = `${chargeableMinutes} minute${
+        chargeableMinutes > 1 ? "s" : ""
+      }`;
     } else if (priceData.priceType === "perDay") {
       const days = timeDiffMs / (1000 * 60 * 60 * 24);
       const chargeableDays = Math.max(1, Math.ceil(days));
       totalAmount = chargeableDays * price;
-      readableDuration = `${chargeableDays} day${chargeableDays > 1 ? "s" : ""}`;
+      readableDuration = `${chargeableDays} day${
+        chargeableDays > 1 ? "s" : ""
+      }`;
     }
 
     // 5. Update check-out details
@@ -220,12 +222,6 @@ const Checkout = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 const getCheckins = async (req, res) => {
   try {
     const userId = req.query.staffId || req.user._id; // ✅ Use staffId if passed
@@ -240,20 +236,24 @@ const getCheckins = async (req, res) => {
       query.vehicleType = vehicle;
     }
 
-    const checkins = await VehicleCheckin.find(query).sort({ entryDateTime: -1 });
+    const checkins = await VehicleCheckin.find(query).sort({
+      entryDateTime: -1,
+    });
 
     res.status(200).json({
       count: checkins.length,
       vehicle: checkins,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
 const getCheckouts = async (req, res) => {
   try {
-  const userId = req.query.staffId || req.user._id;
+    const userId = req.query.staffId || req.user._id;
 
     const { vehicle } = req.query; // ✅ FIXED
 
@@ -276,11 +276,11 @@ const getCheckouts = async (req, res) => {
     });
   } catch (error) {
     console.error("getCheckouts error:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
-
-
 
 const getVehicleList = async (req, res) => {
   try {
@@ -387,11 +387,10 @@ const getTodayVehicle = async (req, res) => {
   }
 };
 
-
 const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-  const userId = req.query.staffId || req.user._id;
+    const userId = req.query.staffId || req.user._id;
 
     const userRole = req.user.role;
 

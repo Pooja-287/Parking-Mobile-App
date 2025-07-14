@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://kj8cjmpw-5000.inc1.devtunnels.ms/";
+const BASE_URL = "https://q8dcnx0t-5000.inc1.devtunnels.ms/";
 
 interface User {
   _id: string;
@@ -744,7 +744,7 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
       set({ isLoading: true });
       const token = get().token || (await AsyncStorage.getItem("token"));
       if (!token) throw new Error("No token found");
-      const res = await fetch(`${BASE_URL}api/passes/${status}`, {
+      const res = await fetch(`${BASE_URL}api/getMontlyPass/${status}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -754,12 +754,11 @@ const userAuthStore = create<UserAuthState>((set, get) => ({
       const data = await res.json();
       if (!res.ok)
         throw new Error(data.message || "Failed to fetch monthly passes");
-      const passes = Array.isArray(data.data) ? data.data : [];
       set({
         isLoading: false,
         ...(status === "active"
-          ? { monthlyPassActive: passes }
-          : { monthlyPassExpired: passes }),
+          ? { monthlyPassActive: data }
+          : { monthlyPassExpired: data }),
       });
       return { success: true, data: passes };
     } catch (err: any) {

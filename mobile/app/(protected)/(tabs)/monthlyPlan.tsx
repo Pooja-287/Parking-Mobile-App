@@ -77,7 +77,7 @@ const MonthlyPass: React.FC = () => {
 
     return (
       <View
-        className={`mx-4 my-3 rounded-2xl ${cardBg} shadow-lg p-5 relative overflow-hidden`}
+        className={`mx-4 my-3 rounded-md ${cardBg} shadow-lg p-5 relative overflow-hidden`}
       >
         <View className="absolute -top-5 -right-5 w-24 h-24 rounded-full bg-white/10" />
 
