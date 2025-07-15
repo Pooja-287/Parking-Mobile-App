@@ -38,27 +38,7 @@ const AccountSettings = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* ✅ Today Vehicle Button */}
-      <TouchableOpacity
-        className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/todayVehicle")}
-      >
-        <Ionicons name="car-outline" size={30} color="#2d6a4f" />
-        <Text className="ml-3 text-xl font-semibold text-green-800">
-          TodayVehicle
-        </Text>
-      </TouchableOpacity>
-
-      {/* ✅ Today Revenue Button */}
-      <TouchableOpacity
-        className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/todayRevenue")}
-      >
-        <Ionicons name="cash-outline" size={30} color="#2d6a4f" />
-        <Text className="ml-3 text-xl font-semibold text-green-800">
-          TodayRevenue
-        </Text>
-      </TouchableOpacity>
+  
 
       {/* ✅ Update Staff Button */}
       <TouchableOpacity
@@ -71,16 +51,9 @@ const AccountSettings = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* ✅ Delete Staff Button */}
-      <TouchableOpacity
-        className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/vehicleList")}
-      >
-        <Ionicons name="trash-outline" size={30} color="#2d6a4f" />
-        <Text className="ml-3 text-xl font-semibold text-green-800">
-          vehicleList
-        </Text>
-      </TouchableOpacity>
+      
+
+
     </SafeAreaView>
   );
 };

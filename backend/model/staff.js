@@ -8,32 +8,33 @@ const staffSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-
   password: {
     type: String,
     required: true
   },
   hashedPassword: {
     type: String,
-    required: true    // actual secure password used for login
+    required: true
   },
-
   role: {
     type: String,
     enum: ['staff'],
     default: 'staff'
   },
-
-  // ✅ Correct naming
   adminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',
     required: true
   },
-   permissions: {
-    type: [String], // Example: ["checkin", "checkout", "monthlyPass"]
+  permissions: {
+    type: [String],
     default: []
-  }
+  },
+   // 👇 Embedded building details (not reference)
+  building: {
+    name: { type: String, required: true },
+    location: { type: String, required: true },
+  },
 });
 
 const Staff = mongoose.model('Staff', staffSchema);

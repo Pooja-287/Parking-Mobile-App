@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
-import userAuthStore from "@/utils/store";
+import userAuthStore from "@/utils/store"; // adjust path to your store
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type VehicleType = "cycle" | "bike" | "car" | "van" | "lorry" | "bus";
 
@@ -29,9 +30,16 @@ const vehicleTypes: VehicleType[] = [
 
 const PriceDetails = () => {
   const navigation = useNavigation();
-  const { prices, addPrice, updatePrice } = userAuthStore();
+  const {
+    fetchPrices,
+    addDailyPrices,
+    addMonthlyPrices,
+    updateDailyPrices,
+    updateMonthlyPrices,
+    priceData,
+  } = userAuthStore();
 
-  const [form, setForm] = useState<PriceForm>({
+  const [dailyForm, setDailyForm] = useState<PriceForm>({
     cycle: "",
     bike: "",
     car: "",
@@ -40,78 +48,105 @@ const PriceDetails = () => {
     bus: "",
   });
 
-  const [isExisting, setIsExisting] = useState(false);
+  const [monthlyForm, setMonthlyForm] = useState<PriceForm>({
+    cycle: "",
+    bike: "",
+    car: "",
+    van: "",
+    lorry: "",
+    bus: "",
+  });
+
+  const [activeTab, setActiveTab] = useState<"daily" | "monthly">("daily");
 
   useEffect(() => {
-    if (prices && typeof prices === "object") {
-      const updated: Partial<PriceForm> = {};
-      for (const key of vehicleTypes) {
-        // @ts-ignore
-        updated[key] = prices?.[key]?.toString() || "";
-      }
-      setForm((prev) => ({ ...prev, ...updated }));
-      setIsExisting(false);
-    }
-  }, [prices]);
+    const loadPrices = async () => {
+      const token = await AsyncStorage.getItem("token");
+      const user = JSON.parse(await AsyncStorage.getItem("user"));
+      if (!token || !user) return;
 
-  const handleChange = (key: VehicleType, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+      await fetchPrices(user._id, token);
+    };
+
+    loadPrices();
+  }, []);
+
+  useEffect(() => {
+    if (priceData?.dailyPrices) {
+      setDailyForm({ ...dailyForm, ...priceData.dailyPrices });
+    }
+    if (priceData?.monthlyPrices) {
+      setMonthlyForm({ ...monthlyForm, ...priceData.monthlyPrices });
+    }
+  }, [priceData]);
+
+  const handleChange = (
+    type: VehicleType,
+    value: string,
+    mode: "daily" | "monthly"
+  ) => {
+    if (mode === "daily") {
+      setDailyForm((prev) => ({ ...prev, [type]: value }));
+    } else {
+      setMonthlyForm((prev) => ({ ...prev, [type]: value }));
+    }
   };
 
-  const isFormValid = () =>
-    vehicleTypes.every((type) => form[type]?.trim() !== "");
+  const isFormValid = (mode: "daily" | "monthly") => {
+    const form = mode === "daily" ? dailyForm : monthlyForm;
+    return vehicleTypes.every((type) => form[type].trim() !== "");
+  };
 
   const handleAdd = async () => {
-    if (!isFormValid()) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "All fields are required ❌",
-      });
-      return;
-    }
+    const token = await AsyncStorage.getItem("token");
+    const user = JSON.parse(await AsyncStorage.getItem("user"));
 
-    const result = await addPrice(form); // ✅ you are sending "vehicle" inside zustand
-    if (result.success) {
+    if (!token || !user) return;
+
+    try {
+      if (activeTab === "daily") {
+        await addDailyPrices(user._id, dailyForm, token);
+      } else {
+        await addMonthlyPrices(user._id, monthlyForm, token);
+      }
+
       Toast.show({
         type: "success",
         text1: "Success",
-        text2: "Prices added successfully ✅",
+        text2: `${activeTab} prices added successfully ✅`,
       });
-      setIsExisting(true);
-      setTimeout(() => navigation.goBack(), 1200);
-    } else {
+    } catch (err) {
       Toast.show({
         type: "error",
-        text1: "Add Failed",
-        text2: result.error || "Something went wrong ❌",
+        text1: "Error",
+        text2: String(err),
       });
     }
   };
 
   const handleUpdate = async () => {
-    if (!isFormValid()) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "All fields are required ❌",
-      });
-      return;
-    }
+    const token = await AsyncStorage.getItem("token");
+    const user = JSON.parse(await AsyncStorage.getItem("user"));
 
-    const result = await updatePrice(form); // This must follow same pattern
-    if (result.success) {
+    if (!token || !user) return;
+
+    try {
+      if (activeTab === "daily") {
+        await updateDailyPrices(user._id, dailyForm, token);
+      } else {
+        await updateMonthlyPrices(user._id, monthlyForm, token);
+      }
+
       Toast.show({
         type: "success",
         text1: "Success",
-        text2: "Prices updated successfully ✅",
+        text2: `${activeTab} prices updated successfully ✅`,
       });
-      setTimeout(() => navigation.goBack(), 1200);
-    } else {
+    } catch (err) {
       Toast.show({
         type: "error",
-        text1: "Update Failed",
-        text2: result.error || "Something went wrong ❌",
+        text1: "Error",
+        text2: String(err),
       });
     }
   };
@@ -126,48 +161,87 @@ const PriceDetails = () => {
           Manage Price List
         </Text>
 
-        <View className="bg-white shadow rounded-xl px-4 py-2 mb-4">
+        {/* Tabs */}
+        <View className="flex-row justify-around mb-6">
+          <TouchableOpacity
+            className={`flex-1 p-3 rounded-l-full ${
+              activeTab === "daily" ? "bg-green-600" : "bg-white"
+            }`}
+            onPress={() => setActiveTab("daily")}
+          >
+            <Text
+              className={`text-center text-lg font-bold ${
+                activeTab === "daily" ? "text-white" : "text-green-800"
+              }`}
+            >
+              Daily Prices
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className={`flex-1 p-3 rounded-r-full ${
+              activeTab === "monthly" ? "bg-green-600" : "bg-white"
+            }`}
+            onPress={() => setActiveTab("monthly")}
+          >
+            <Text
+              className={`text-center text-lg font-bold ${
+                activeTab === "monthly" ? "text-white" : "text-green-800"
+              }`}
+            >
+              Monthly Prices
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Input Section */}
+        <View className="bg-white shadow rounded-xl px-4 py-4 mb-6">
           {vehicleTypes.map((type) => (
-            <View key={type} className="mb-2">
-              <Text className="text-base font-semibold mb-1 text-gray-700 capitalize">
-                {type} Price
+            <View key={type} className="mb-4">
+              <Text className="text-base font-semibold text-gray-800 capitalize mb-1">
+                {type}
               </Text>
               <TextInput
-                value={form[type]}
-                onChangeText={(val) => handleChange(type, val)}
-                placeholder={`Enter ${type} price`}
+                value={
+                  activeTab === "daily" ? dailyForm[type] : monthlyForm[type]
+                }
+                onChangeText={(val) =>
+                  handleChange(type, val, activeTab)
+                }
+                placeholder={`Enter ${type} ${activeTab} price`}
                 keyboardType="numeric"
-                className="border border-gray-300 rounded-sm px-4 py-3 text-base bg-blue-100"
+                className="border border-gray-300 rounded px-4 py-2 bg-blue-100"
               />
             </View>
           ))}
         </View>
 
-        {!isExisting ? (
+        {/* Buttons */}
+        <View className="flex-row justify-between gap-4 mb-4">
           <TouchableOpacity
-            className={`bg-green-600 py-4 rounded-sm mb-4 ${
-              !isFormValid() ? "opacity-50" : ""
+            className={`flex-1 bg-green-600 py-4 rounded-sm ${
+              !isFormValid(activeTab) ? "opacity-50" : ""
             }`}
             onPress={handleAdd}
-            disabled={!isFormValid()}
+            disabled={!isFormValid(activeTab)}
           >
             <Text className="text-center text-white font-semibold text-lg">
               Add Price
             </Text>
           </TouchableOpacity>
-        ) : (
+
           <TouchableOpacity
-            className={`bg-green-500 py-4 rounded-sm ${
-              !isFormValid() ? "opacity-50" : ""
+            className={`flex-1 bg-green-500 py-4 rounded-sm ${
+              !isFormValid(activeTab) ? "opacity-50" : ""
             }`}
             onPress={handleUpdate}
-            disabled={!isFormValid()}
+            disabled={!isFormValid(activeTab)}
           >
             <Text className="text-center text-white font-semibold text-lg">
               Update Price
             </Text>
           </TouchableOpacity>
-        )}
+        </View>
       </ScrollView>
 
       <Toast />
