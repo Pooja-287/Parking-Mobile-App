@@ -78,7 +78,7 @@ const Checkin = async (req, res) => {
     }
 
     const tokenId = uuidv4();
-    const qrCode = await QRCode.toDataURL(tokenId);
+    // const qrCode = await QRCode.toDataURL(tokenId);
     const newCheckin = new VehicleCheckin({
       name,
       vehicleNo: cleanedPlate,
@@ -95,8 +95,8 @@ const Checkin = async (req, res) => {
       qrCode,
       isCheckedOut: false,
     });
-    const recipientNumber = `91${mobile}`;
-    const imageUrl = await uploadQR(qrCode);
+    // const recipientNumber = `91${mobile}`;
+    // const imageUrl = await uploadQR(qrCode);
     // await sendWhatsAppTemplate(recipientNumber, imageUrl, tokenId);
     await newCheckin.save();
 
