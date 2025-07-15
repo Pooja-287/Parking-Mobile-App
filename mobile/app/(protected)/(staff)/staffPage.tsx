@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import userAuthStore from "@/utils/store"; 
+import userAuthStore from "@/utils/store";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const AccountSettings = () => {
   const router = useRouter();
@@ -19,7 +19,7 @@ const AccountSettings = () => {
       {/* ✅ Staff List Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/AllStaffsScreen")}
+        onPress={() => router.push("/AllStaffsScreen")}
       >
         <Ionicons name="people-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -30,7 +30,7 @@ const AccountSettings = () => {
       {/* ✅ Create Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/create")}
+        onPress={() => router.push("/create")}
       >
         <Ionicons name="person-add-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -41,7 +41,7 @@ const AccountSettings = () => {
       {/* ✅ Today Vehicle Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/todayVehicle")}
+        onPress={() => router.push("/todayVehicle")}
       >
         <Ionicons name="car-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -52,7 +52,7 @@ const AccountSettings = () => {
       {/* ✅ Today Revenue Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/todayRevenue")}
+        onPress={() => router.push("/todayRevenue")}
       >
         <Ionicons name="cash-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
@@ -63,18 +63,18 @@ const AccountSettings = () => {
       {/* ✅ Update Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push('/(protected)/(staff)/allStaffs')}
+        onPress={() => router.push("/allStaffs")}
       >
         <Ionicons name="create-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">
-       AllStaffs
+          AllStaffs
         </Text>
       </TouchableOpacity>
 
       {/* ✅ Delete Staff Button */}
       <TouchableOpacity
         className="flex-row items-center bg-green-100 px-5 py-4 rounded-xl shadow mb-4"
-        onPress={() => router.push("/(protected)/(staff)/vehicleList")}
+        onPress={() => router.push("/vehicleList")}
       >
         <Ionicons name="trash-outline" size={30} color="#2d6a4f" />
         <Text className="ml-3 text-xl font-semibold text-green-800">

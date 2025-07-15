@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DatePicker from "@react-native-community/datetimepicker";
@@ -47,6 +48,7 @@ const MonthlyPassModal: React.FC<MonthlyPassModalProps> = ({
   onPassCreated,
 }) => {
   const [isDatePickerVisible, setDatePickerVisible] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     vehicleNo: "",
@@ -73,6 +75,7 @@ const MonthlyPassModal: React.FC<MonthlyPassModalProps> = ({
   }, [formData.startDate, formData.duration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreatePass = async () => {
+    setIsLoading(true);
     if (
       !formData.name &&
       !formData.vehicleNo &&
@@ -82,20 +85,42 @@ const MonthlyPassModal: React.FC<MonthlyPassModalProps> = ({
       !formData.paymentMethod &&
       !formData.startDate
     ) {
-      Alert.alert("Error", "Please fill all required fields");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please fill all required fields",
+        position: "top",
+        visibilityTime: 2000,
+        autoHide: true,
+      });
+      setIsLoading(false);
+      return;
     }
     const result = await createMonthlyPass(formData);
-    if (!result.success) Toast.error("Error in API");
+    setIsLoading(false);
 
+    if (!result.success) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Error in API",
+        position: "top",
+        visibilityTime: 2000,
+        autoHide: true,
+      });
+      setIsLoading(false);
+
+      return;
+    }
+    setIsLoading(false);
     Toast.show({
       type: "success",
-      text1: "Pass Created Successfully",
+      text1: "Success",
+      text2: "Pass Created Successfully",
+      position: "top",
+      visibilityTime: 2000,
+      autoHide: true,
     });
-
-    setTimeout(() => {
-      setModalVisible(false);
-    }, 3000);
-
     setFormData({
       name: "",
       vehicleNo: "",
@@ -106,6 +131,10 @@ const MonthlyPassModal: React.FC<MonthlyPassModalProps> = ({
       startDate: "",
       endDate: "",
     });
+
+    setTimeout(() => {
+      setModalVisible(false);
+    }, 2000);
   };
 
   return (
@@ -238,12 +267,18 @@ const MonthlyPassModal: React.FC<MonthlyPassModalProps> = ({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-green-600 py-3 px-4 rounded-sm flex-1 ml-2"
+              className="bg-green-600 py-3 px-4 justify-center items-center rounded-sm flex-1 ml-2"
               onPress={handleCreatePass}
             >
-              <Text className="text-white text-base font-medium text-center">
-                Create
-              </Text>
+              {isLoading ? (
+                <View className="bg-white p-2 rounded-full">
+                  <ActivityIndicator size="small" color="#10B981" />
+                </View>
+              ) : (
+                <Text className="text-center text-xl text-white font-semibold">
+                  Create
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

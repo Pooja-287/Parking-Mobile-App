@@ -12,6 +12,7 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,12 +24,15 @@ const Login = () => {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = userAuthStore();
 
   const screenWidth = Dimensions.get("window").width;
 
   const handleLogin = async () => {
+    setIsLoading(true);
     const result = await login(userName, password);
+    setIsLoading(false);
     if (!result.success) {
       Toast.show({
         type: "error",
@@ -120,12 +124,18 @@ const Login = () => {
 
         {/* Login Button */}
         <TouchableOpacity
-          className="bg-[#4CAF50] py-4 rounded-xl"
+          className="bg-[#4CAF50] items-center py-4 rounded-xl"
           onPress={handleLogin}
         >
-          <Text className="text-center text-xl text-white font-semibold">
-            Login
-          </Text>
+          {isLoading ? (
+            <View className="bg-white p-2 rounded-full">
+              <ActivityIndicator size="small" color="#10B981" />
+            </View>
+          ) : (
+            <Text className="text-center text-xl text-white font-semibold">
+              Login
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

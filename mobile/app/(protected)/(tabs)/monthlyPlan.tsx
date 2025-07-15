@@ -80,14 +80,11 @@ const MonthlyPass: React.FC = () => {
         className={`mx-4 my-3 rounded-md ${cardBg} shadow-lg p-5 relative overflow-hidden`}
       >
         <View className="absolute -top-5 -right-5 w-24 h-24 rounded-full bg-white/10" />
-
-        {/* Header */}
         <View className="flex-row justify-between items-center mb-4">
           <Text className={`text-xl font-bold ${textColor}`}>{item.name}</Text>
           <MaterialIcons name="directions-car" size={24} color="#fff" />
         </View>
 
-        {/* Details */}
         <View className="mb-2">
           <Text className={`text-sm font-medium ${textColor}`}>
             Vehicle No: <Text className="font-bold">{item.vehicleNo}</Text>
@@ -96,7 +93,6 @@ const MonthlyPass: React.FC = () => {
             Mobile: {item.mobile}
           </Text>
         </View>
-
         <View className="flex-row justify-between items-center mt-2">
           <View>
             <Text className={`text-xs ${textColor}`}>Duration</Text>
@@ -132,7 +128,6 @@ const MonthlyPass: React.FC = () => {
             </Text>
           </View>
         </View>
-
         <View className="mt-4 border-t border-white/30 pt-2 flex-row justify-between">
           <Text className={`text-xs ${textColor}`}>Pass ID</Text>
           <Text className={`text-xs font-semibold ${textColor}`}>
@@ -151,13 +146,11 @@ const MonthlyPass: React.FC = () => {
         : [];
 
   return (
-    <View className="flex-1 bg-gray-100">
-      {/* Header */}
+    <View className="flex-1 bg-[#F3F4F6]">
       <View className="my-4 mx-4 bg-white justify-center items-center py-4 rounded-sm shadow-sm">
         <Text className="text-xl font-semibold">Monthly Pass</Text>
       </View>
 
-      {/* Tabs */}
       <View className="flex-row justify-around mx-4 mb-4">
         {TABS.map((tab) => (
           <TouchableOpacity
@@ -179,7 +172,6 @@ const MonthlyPass: React.FC = () => {
         ))}
       </View>
 
-      {/* Body */}
       {activeTab === "create" ? (
         <TouchableOpacity
           className="bg-green-600 mx-4 py-4 rounded-sm items-center"
@@ -204,7 +196,6 @@ const MonthlyPass: React.FC = () => {
         />
       )}
 
-      {/* Duration Extend Modal */}
       {showDurationModal && (
         <View className="absolute inset-0 bg-black/40 justify-center items-center z-50">
           <View className="bg-white p-6 rounded-lg w-72 shadow-lg">

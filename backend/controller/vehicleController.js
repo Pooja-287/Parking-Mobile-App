@@ -92,7 +92,6 @@ const Checkin = async (req, res) => {
       adminId,
       checkInBy,
       tokenId,
-      qrCode,
       isCheckedOut: false,
     });
     // const recipientNumber = `91${mobile}`;

@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,12 +23,15 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const { signup } = userAuthStore();
 
   const handleSignup = async () => {
+    setIsLoading(true);
     const result = await signup(userName, email, password);
+    setIsLoading(false);
     if (!result.success) {
       Toast.show({
         type: "error",
@@ -162,9 +166,15 @@ const Signup = () => {
                 className="bg-[#4CAF50] py-4 rounded-xl"
                 onPress={handleSignup}
               >
-                <Text className="text-center text-xl text-white font-semibold">
-                  Signup
-                </Text>
+                {isLoading ? (
+                  <View className="bg-white p-2 rounded-full">
+                    <ActivityIndicator size="small" color="#10B981" />
+                  </View>
+                ) : (
+                  <Text className="text-center text-xl text-white font-semibold">
+                    SignUp
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </ScrollView>

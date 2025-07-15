@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
-import { Text, View, TextInput, TouchableOpacity, Alert } from "react-native";
+import {
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import useAuthStore from "../utils/store";
 import ToastManager, { Toast } from "toastify-react-native";
 
@@ -15,6 +22,7 @@ const CheckIn = () => {
   const [vehicleType, setVehicleType] = useState("cycle");
   const [mobile, setMobile] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [isLoading, setIsLoading] = useState(false);
   const [days, setDays] = useState("1");
 
   const { prices, checkIn, loadPricesIfNotSet } = useAuthStore();
@@ -45,18 +53,19 @@ const CheckIn = () => {
   };
 
   const handleSubmit = async () => {
+    setIsLoading(true);
     if (!vehicleNo || !mobile) {
       Toast.show({
         type: "error",
         text1: "Error",
         text2: "All fields are required",
         position: "top",
-        visibilityTime: 4000,
+        visibilityTime: 2000,
         autoHide: true,
       });
+      setIsLoading(false);
       return;
     }
-
     const result = await checkIn(
       name,
       vehicleNo,
@@ -67,22 +76,24 @@ const CheckIn = () => {
       amount,
       typedPrices[vehicleType]
     );
-
+    setIsLoading(false);
     if (!result.success) {
       Toast.show({
         type: "error",
         text1: "Error",
         text2: result.error || "Check In Failed",
         position: "top",
-        visibilityTime: 4000,
+        visibilityTime: 2000,
         autoHide: true,
       });
+      return;
     }
+
     Toast.show({
       type: "success",
       text1: "Check In Success",
       position: "top",
-      visibilityTime: 4000,
+      visibilityTime: 2000,
       autoHide: true,
     });
 
@@ -103,7 +114,7 @@ const CheckIn = () => {
         <TextInput
           placeholder="Vehicle Number"
           value={vehicleNo}
-          onChangeText={setVehicleNo}
+          onChangeText={(text) => setVehicleNo(text.toUpperCase())}
           className="rounded text-xl px-3 h-12 bg-blue-100"
         />
 
@@ -120,6 +131,7 @@ const CheckIn = () => {
 
         <TextInput
           placeholder="Mobile Number"
+          maxLength={10}
           value={mobile}
           onChangeText={setMobile}
           keyboardType="number-pad"
@@ -159,7 +171,15 @@ const CheckIn = () => {
           className="bg-green-600 p-3 rounded-lg items-center"
           onPress={handleSubmit}
         >
-          <Text className="text-lg text-white">Enter</Text>
+          {isLoading ? (
+            <View className="bg-white p-2 rounded-full">
+              <ActivityIndicator size="small" color="#10B981" />
+            </View>
+          ) : (
+            <Text className="text-center text-xl text-white font-semibold">
+              Enter
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
       <ToastManager showCloseIcon={false} />
