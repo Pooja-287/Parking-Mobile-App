@@ -208,7 +208,8 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="staffs" options={{ href: null }} />
         <Tabs.Screen name="updateProfile" options={{ href: null }} />
-        <Tabs.Screen name="priceDetails" options={{ href: null }} />
+        <Tabs.Screen name="priceDetails" options={{href: null}} />
+        <Tabs.Screen name="splash" options={{href: null}}/>
         {/* <Tabs.Screen name="staffPermissions" options={{href: null}} /> */}
         {/* <Tabs.Screen name="staff" options={{href: null}} /> */}
 

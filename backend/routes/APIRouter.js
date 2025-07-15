@@ -122,9 +122,11 @@ router.delete(
   verifyToken,
   userController.deleteAdmin
 );
-router.post("/api/addPrice", verifyToken, userController.addPrice);
-router.put("/api/updatePrice", verifyToken, userController.updatePrice);
-router.get("/api/getPrices", verifyToken, userController.getPrice);
+router.post("/api/addPrice/daily", verifyToken, userController.addDailyPrices);
+router.post("/api/addPrice/monthly", verifyToken, userController.addMonthlyPrices);
+router.put("/api/updatePrice/daily", verifyToken,userController.updateDailyPrices);
+router.put("/api/updatePrice/monthly", verifyToken,userController.updateMonthlyPrices);
+router.get("/api/getPrices/:adminId", verifyToken, userController.getPrices);
 
 router.post(
   "/api/createMonthlyPass",
@@ -132,13 +134,9 @@ router.post(
   passController.createMonthlyPass
 );
 router.get("/api/getMontlyPass/:id", verifyToken, passController.getMontlyPass);
-
+router.get("/api/getMontlyPass/active", verifyToken, passController.getMontlyPass);
+router.get("/api/getMontlyPass/expired", verifyToken, passController.getMontlyPass);
 router.put("/api/extendPass/:id", verifyToken, passController.extendPass);
-router.get(
-  "/api/getDashboardData",
-  verifyToken,
-  userController.getDashboardData
-);
 
 export default router;
 

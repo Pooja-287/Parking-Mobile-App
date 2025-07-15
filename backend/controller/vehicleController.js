@@ -7,31 +7,38 @@ import Staff from "../model/staff.js";
 import mongoose from "mongoose";
 import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";
 
+
+
+// ✅ Capitalize helper
+const capitalize = (str) =>
+  str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+// ✅ Convert to IST string format
 const convertToISTString = (date) => {
-  const istDate = new Date(date).toLocaleString("en-IN", {
+  return new Date(date).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
   });
-  return istDate;
 };
 
 const Checkin = async (req, res) => {
   try {
-    const { name, vehicleNo, vehicleType, mobile, paymentMethod, days } =
-      req.body;
+    const {
+      name,
+      vehicleNo,
+      vehicleType,
+      mobile,
+      paymentMethod,
+      days,
+    } = req.body;
 
     const user = req.user;
 
-    if (
-      !name ||
-      !vehicleType ||
-      !vehicleNo ||
-      !mobile ||
-      !paymentMethod ||
-      !days
-    ) {
+    // ✅ Validate required fields
+    if (!name || !vehicleType || !vehicleNo || !mobile || !paymentMethod || !days) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // ✅ Clean & validate vehicle number
     const cleanedPlate = vehicleNo.replace(/\s/g, "").toUpperCase();
 
     if (vehicleNo !== cleanedPlate) {
@@ -40,30 +47,47 @@ const Checkin = async (req, res) => {
       });
     }
 
+    // ✅ Clean vehicle type safely
+    const cleanedType = (vehicleType || "").trim().toLowerCase();
+
     const userRole = user.role;
     const checkInBy = user._id;
-    let adminId = "";
+    const adminId = userRole === "admin" ? checkInBy : user.adminId;
 
-    if (userRole === "admin") {
-      adminId = checkInBy;
-    } else {
-      adminId = user.adminId;
-    }
-
+    // ✅ Fetch price document
     const priceDoc = await Price.findOne({ adminId });
 
-    if (
-      !priceDoc ||
-      !priceDoc.vehicle[vehicleType] ||
-      priceDoc.vehicle[vehicleType] === "0"
-    ) {
+    // 🪵 Debug logs
+    console.log("🧾 priceDoc:", priceDoc);
+    console.log("🚗 vehicleType:", cleanedType);
+    console.log("🔑 dailyPrices keys:", Object.keys(priceDoc?.dailyPrices || {}));
+    console.log("💰 rate value:", priceDoc?.dailyPrices?.[cleanedType]);
+
+    // ✅ Guard clause for missing dailyPrices
+    if (!priceDoc || typeof priceDoc.dailyPrices !== "object") {
       return res.status(400).json({
-        message: `Please add price for ${vehicleType} before checking in.`,
+        message: "Daily prices are not set for this admin.",
       });
     }
 
-    const rate = Number(priceDoc.vehicle[vehicleType]);
+    // ✅ Get rate for cleaned vehicle type
+    const rateStr = priceDoc.dailyPrices[cleanedType];
 
+    if (!rateStr || rateStr === "0") {
+      return res.status(400).json({
+        message: `Daily price for "${cleanedType}" is missing or zero.`,
+      });
+    }
+
+    const rate = Number(rateStr);
+
+    if (isNaN(rate)) {
+      return res.status(400).json({
+        message: `Rate for "${cleanedType}" is not a valid number.`,
+      });
+    }
+
+    // ✅ Check if already checked in
     const alreadyCheckedIn = await VehicleCheckin.findOne({
       vehicleNo: cleanedPlate,
       isCheckedOut: false,
@@ -77,12 +101,15 @@ const Checkin = async (req, res) => {
       });
     }
 
+    // ✅ Generate token & QR
     const tokenId = uuidv4();
-    // const qrCode = await QRCode.toDataURL(tokenId);
+    const qrCode = await QRCode.toDataURL(tokenId);
+
+    // ✅ Save check-in data
     const newCheckin = new VehicleCheckin({
       name,
       vehicleNo: cleanedPlate,
-      vehicleType,
+      vehicleType: cleanedType,
       mobile,
       paymentMethod,
       days,
@@ -94,23 +121,25 @@ const Checkin = async (req, res) => {
       tokenId,
       isCheckedOut: false,
     });
-    // const recipientNumber = `91${mobile}`;
-    // const imageUrl = await uploadQR(qrCode);
-    // await sendWhatsAppTemplate(recipientNumber, imageUrl, tokenId);
+
     await newCheckin.save();
 
     return res.status(201).json({
-      message: "Vehicle checked in successfully",
+      message: "✅ Vehicle checked in successfully",
       tokenId,
     });
   } catch (error) {
-    console.error("Check-in error:", error);
-
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    console.error("❌ Check-in error:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
+
+
+
+
 
 const Checkout = async (req, res) => {
   try {
@@ -137,7 +166,7 @@ const Checkout = async (req, res) => {
       });
     }
 
-    // 2. Get adminId from JWT middleware
+    // 2. Get adminId from user (middleware)
     const userRole = user.role;
     const userId = user._id;
     const adminId = userRole === "admin" ? userId : user.adminId;
@@ -145,19 +174,19 @@ const Checkout = async (req, res) => {
     // 3. Get pricing info
     const priceData = await Price.findOne({ adminId });
 
-    if (!priceData) {
-      return res
-        .status(404)
-        .json({ message: "No pricing info found for this admin" });
+    if (!priceData || typeof priceData.dailyPrices !== "object") {
+      return res.status(404).json({ message: "No daily pricing info found for this admin" });
     }
 
-    const vehicleType = vehicle.vehicleType;
-    const price = priceData.vehicle[vehicleType];
+    // ✅ Clean vehicleType before using it as key
+    const vehicleType = (vehicle.vehicleType || "").trim().toLowerCase();
 
-    if (!price) {
-      return res
-        .status(404)
-        .json({ message: `No price found for ${vehicleType}` });
+    // ✅ Get rate from dailyPrices
+    const priceStr = priceData.dailyPrices?.[vehicleType];
+    const price = Number(priceStr);
+
+    if (!priceStr || isNaN(price)) {
+      return res.status(400).json({ message: `Invalid or missing price for ${vehicleType}` });
     }
 
     // 4. Calculate charges
@@ -169,35 +198,34 @@ const Checkout = async (req, res) => {
     let totalAmount = 0;
     let readableDuration = "";
 
-    if (priceData.priceType === "perHour") {
+    // Default to perDay pricing
+    const priceType = priceData.priceType || "perDay";
+
+    if (priceType === "perHour") {
       const pricePerMinute = price / 60;
       const chargeableMinutes = Math.max(1, Math.ceil(minutesUsed));
       totalAmount = parseFloat((chargeableMinutes * pricePerMinute).toFixed(2));
-      readableDuration = `${chargeableMinutes} minute${
-        chargeableMinutes > 1 ? "s" : ""
-      }`;
-    } else if (priceData.priceType === "perDay") {
+      readableDuration = `${chargeableMinutes} minute${chargeableMinutes > 1 ? "s" : ""}`;
+    } else {
       const days = timeDiffMs / (1000 * 60 * 60 * 24);
       const chargeableDays = Math.max(1, Math.ceil(days));
       totalAmount = chargeableDays * price;
-      readableDuration = `${chargeableDays} day${
-        chargeableDays > 1 ? "s" : ""
-      }`;
+      readableDuration = `${chargeableDays} day${chargeableDays > 1 ? "s" : ""}`;
     }
 
-    // 5. Update check-out details
+    // 5. Update checkout details
     vehicle.exitDateTime = exitTime;
     vehicle.totalAmount = totalAmount;
     vehicle.totalParkedHours = (timeDiffMs / (1000 * 60 * 60)).toFixed(2);
     vehicle.isCheckedOut = true;
-    vehicle.checkedOutBy = user.username;
+    vehicle.checkedOutBy = user.name || user.username || "Unknown";
     vehicle.checkedOutByRole = userRole;
 
     await vehicle.save();
 
-    // 6. Return response
+    // 6. Respond with receipt
     res.status(200).json({
-      message: "Vehicle checked out successfully",
+      message: "✅ Vehicle checked out successfully",
       receipt: {
         name: vehicle.name,
         mobileNumber: vehicle.mobile,
@@ -207,20 +235,24 @@ const Checkout = async (req, res) => {
           entryTime: entryTime.toLocaleTimeString(),
           exitTime: exitTime.toLocaleTimeString(),
           timeUsed: readableDuration,
-          priceType: priceData.priceType,
+          priceType: priceType,
           price: `₹${price}`,
           amountPaid: `₹${totalAmount}`,
         },
       },
     });
   } catch (error) {
-    console.error("Checkout error:", error);
+    console.error("❌ Checkout error:", error);
     return res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
     });
   }
 };
+
+
+
+
 
 const getCheckins = async (req, res) => {
   try {
@@ -470,7 +502,7 @@ const getVehicleByToken = async (req, res) => {
       return res.status(403).json({ message: "Invalid user role" });
     }
 
-    console.log("Query to MongoDB =>", query); // 👈 DEBUG line
+    console.log("Query to MongoDB =>", query); 
 
     const vehicle = await VehicleCheckin.findOne(query);
 
@@ -514,116 +546,61 @@ const getVehicleByNumberPlate = async (req, res) => {
   }
 };
 
+
+
 const getRevenueReport = async (req, res) => {
   try {
-    const { from, to, vehicleType, staffId, minRevenue, maxRevenue } =
-      req.query;
-    const userId = req.user._id.toString();
-    const userRole = capitalize(req.user.role); // 'Admin' or 'Staff'
+    const user = req.user;
+    const userId = user._id;
+    const role = user.role;
 
-    if (!from || !to) {
-      return res
-        .status(400)
-        .json({ message: "Provide both 'from' and 'to' dates (YYYY-MM-DD)" });
-    }
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-
-    // Base filter
-    const matchQuery = {
+    // Use updatedAt instead of exitDateTime
+    const filter = {
       isCheckedOut: true,
-      exitDateTime: { $gte: fromDate, $lte: toDate },
+      updatedAt: { $gte: startOfDay, $lte: endOfDay },
     };
 
-    // Build list of allowed user IDs
-    let allowedIds = [userId];
-    if (userRole === "Admin") {
-      const staffs = await Staff.find({ createdBy: userId }).select("_id");
-      allowedIds = [userId, ...staffs.map((s) => s._id.toString())];
-    }
-    matchQuery.createdBy = { $in: allowedIds };
-
-    // Optional filters
-    if (vehicleType) matchQuery.vehicleType = vehicleType;
-    if (staffId) {
-      if (userRole !== "Admin") {
-        return res
-          .status(403)
-          .json({ message: "Only admins can filter by staffId" });
-      }
-      const ownStaff = await Staff.findOne({ _id: staffId, createdBy: userId });
-      if (!ownStaff) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to view this staff's data" });
-      }
-      matchQuery.createdBy = staffId;
+    if (role === "staff") {
+      filter.checkInBy = userId;
+    } else if (role === "admin") {
+      filter.adminId = userId;
     }
 
-    // Retrieve & sort
-    const allVehicles = await VehicleCheckin.find(matchQuery)
-      .populate("createdBy", "username")
-      .sort({ exitDateTime: -1 });
+    const checkouts = await VehicleCheckin.find(filter);
 
-    // Apply revenue filters
-    const vehicles = allVehicles.filter((v) => {
-      const amt = v.totalAmount || 0;
-      if (minRevenue && amt < parseFloat(minRevenue)) return false;
-      if (maxRevenue && amt > parseFloat(maxRevenue)) return false;
-      return true;
-    });
-
-    const totalRevenue = vehicles.reduce(
-      (sum, v) => sum + (v.totalAmount || 0),
+    const totalRevenue = checkouts.reduce(
+      (sum, v) => sum + (v.amount ?? v.totalAmount ?? 0),
       0
     );
 
-    // Breakdown for admins
-    let staffRevenueBreakup = [];
-    if (userRole === "Admin") {
-      const map = new Map();
-      vehicles.forEach((v) => {
-        const usr = v.createdBy?.username || "Unknown";
-        const sid = v.createdBy?._id?.toString() || "unknown";
-        const key = `${usr}_${sid}`;
-        const amt = v.totalAmount || 0;
-        if (!map.has(key))
-          map.set(key, { username: usr, staffId: sid, totalAmount: 0 });
-        map.get(key).totalAmount += amt;
-      });
-      staffRevenueBreakup = Array.from(map.values()).map((e) => ({
-        username: e.username,
-        staffId: e.staffId,
-        totalAmount: +e.totalAmount.toFixed(2),
-      }));
-    }
+    const formattedVehicles = checkouts.map((v) => ({
+      name: v.name,
+      numberPlate: v.vehicleNo,
+      vehicleType: v.vehicleType,
+      amount: `₹${(v.amount ?? v.totalAmount ?? 0).toFixed(2)}`,
+      createdBy: v.checkedOutBy || "N/A",
+    }));
 
-    // Response
-    res.json({
-      fromDate,
-      toDate,
-      role: userRole,
-      totalRevenue: `₹${totalRevenue.toFixed(2)}`,
-      totalVehicles: vehicles.length,
-      vehicles: vehicles.map((v) => ({
-        name: v.name,
-        vehicleType: v.vehicleType,
-        numberPlate: v.vehicleNumber,
-        amount: `₹${v.totalAmount?.toFixed(2)}`,
-        exitTime: convertToISTString(v.exitDateTime),
-        createdBy: v.createdBy?.username || "N/A",
-      })),
-      ...(userRole === "Admin" && { staffRevenueBreakup }),
+    res.status(200).json({
+      role,
+      totalVehicles: checkouts.length,
+      revenue: `₹${totalRevenue.toFixed(2)}`,
+      vehicles: formattedVehicles,
     });
-  } catch (err) {
-    console.error("Revenue report error:", err);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: err.message });
+  } catch (error) {
+    console.error("getRevenueReport error:", error);
+    res.status(500).json({
+      message: "Failed to get revenue report",
+      error: error.message,
+    });
   }
 };
+
+
 
 export default {
   Checkin,

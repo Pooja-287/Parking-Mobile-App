@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { MaterialIcons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -7,9 +6,12 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import MonthlyPassModal from "@/components/MonthlyPassModal";
+import { MaterialIcons } from "@expo/vector-icons";
 import userAuthStore from "@/utils/store";
+import MonthlyPassModal from "@/components/monthlyPassModal";
 import { Toast } from "toastify-react-native";
+
+const TABS = ["create", "active", "expired"] as const;
 
 interface Pass {
   _id: string;
@@ -24,51 +26,40 @@ interface Pass {
   isExpired: boolean;
 }
 
-const TABS = ["create", "active", "expired"];
-
 const MonthlyPass: React.FC = () => {
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("active");
-  const [editPassId, setEditPassId] = useState<string | null>(null);
-  const [showDurationModal, setShowDurationModal] = useState(false);
-  const [selectedMonths, setSelectedMonths] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>("active");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [extendModal, setExtendModal] = useState(false);
+  const [months, setMonths] = useState(3);
 
   const {
-    getMonthlyPass,
     monthlyPassActive,
     monthlyPassExpired,
     isLoading,
+    getMonthlyPass,
     extendMonthlyPass,
   } = userAuthStore();
 
   useEffect(() => {
-    if (activeTab !== "create") {
-      getMonthlyPass(activeTab);
-    }
+    if (activeTab !== "create") getMonthlyPass(activeTab);
   }, [activeTab]);
 
-  const handlePassCreated = () => {
+  const onCreated = () => {
     setModalVisible(false);
-    if (activeTab === "active") {
-      getMonthlyPass("active");
-    }
+    if (activeTab === "active") getMonthlyPass("active");
   };
 
-  const handleExtend = async () => {
-    if (!editPassId) return;
-
-    const result = await extendMonthlyPass(editPassId, selectedMonths);
-
-    if (!result.success) {
-      Toast.show({ type: "error", text1: "Something went wrong" });
-      return;
+  const onExtend = async () => {
+    if (!editingId) return;
+    const res = await extendMonthlyPass(editingId, months);
+    if (!res.success) {
+      Toast.show({ type: "error", text1: res.error || "Failed" });
+    } else {
+      Toast.show({ type: "success", text1: "Extended!" });
+      setExtendModal(false);
+      getMonthlyPass(activeTab);
     }
-
-    Toast.show({ type: "success", text1: "Duration extended successfully" });
-    setTimeout(() => {
-      setShowDurationModal(false);
-      getMonthlyPass(activeTab); // refresh data
-    }, 2000);
   };
 
   const renderPassItem = ({ item }: { item: Pass }) => {
@@ -155,14 +146,13 @@ const MonthlyPass: React.FC = () => {
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
-            className={`flex-1 py-3 items-center rounded-sm mx-1 ${
+            className={`flex-1 py-2 mx-1 rounded ${
               activeTab === tab ? "bg-green-600" : "bg-white"
             }`}
-            disabled={isLoading}
             onPress={() => setActiveTab(tab)}
           >
             <Text
-              className={`text-base font-medium ${
+              className={`text-center ${
                 activeTab === tab ? "text-white" : "text-black"
               }`}
             >
@@ -174,24 +164,61 @@ const MonthlyPass: React.FC = () => {
 
       {activeTab === "create" ? (
         <TouchableOpacity
-          className="bg-green-600 mx-4 py-4 rounded-sm items-center"
+          className="bg-green-600 m-4 p-4 rounded items-center"
           onPress={() => setModalVisible(true)}
+          disabled={isLoading}
         >
-          <Text className="text-white text-base font-medium">
-            Create New Pass
-          </Text>
+          <Text className="text-white font-semibold">Create New Pass</Text>
         </TouchableOpacity>
-      ) : isLoading ? (
-        <ActivityIndicator size="large" color="#22c55e" className="mt-10" />
+      )}
+
+      {isLoading && activeTab !== "create" ? (
+        <ActivityIndicator className="mt-10" color="#22c55e" size="large" />
       ) : (
         <FlatList
-          data={data}
-          renderItem={renderPassItem}
+          data={data ?? []}
           keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <View
+              className={`m-4 p-4 rounded shadow ${
+                item.isExpired ? "bg-gray-300" : "bg-green-500"
+              }`}
+            >
+              <View className="flex-row justify-between items-center">
+                <View>
+                  <Text className="text-lg font-bold text-white">
+                    {item.name}
+                  </Text>
+                  <Text className="text-white">{item.vehicleNo}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingId(item._id);
+                    setExtendModal(true);
+                  }}
+                  disabled={item.isExpired}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={24}
+                    color={item.isExpired ? "#000" : "#fff"}
+                  />
+                </TouchableOpacity>
+              </View>
+              <Text className="text-white mt-2">
+                Duration: {item.duration} mo | ₹{item.amount}
+              </Text>
+              <Text className="text-white mt-1">
+                Valid till: {new Date(item.endDate).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
           ListEmptyComponent={
-            <Text className="text-center mt-5 text-base text-gray-500">
-              No {activeTab} passes
-            </Text>
+            !isLoading && (
+              <Text className="text-center mt-10 text-gray-500">
+                No {activeTab} passes
+              </Text>
+            )
           }
         />
       )}
@@ -202,53 +229,34 @@ const MonthlyPass: React.FC = () => {
             <Text className="text-lg font-semibold mb-3 text-center">
               Extend Duration
             </Text>
-
-            <View className="flex-row flex-wrap justify-center">
-              {[3, 6, 9, 12].map((m) => (
-                <TouchableOpacity
-                  key={m}
-                  onPress={() => setSelectedMonths(m)}
-                  className={`m-1 px-4 py-2 rounded-full border ${
-                    selectedMonths === m
-                      ? "bg-green-600 border-green-600"
-                      : "bg-gray-200 border-gray-300"
-                  }`}
-                >
-                  <Text
-                    className={`${
-                      selectedMonths === m ? "text-white" : "text-black"
-                    } font-medium`}
-                  >
-                    {m} mo
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View className="mt-5 flex-row justify-between">
+            {[3, 6, 9, 12].map((m) => (
               <TouchableOpacity
-                className="px-4 py-2 bg-gray-300 rounded"
-                onPress={() => setShowDurationModal(false)}
+                key={m}
+                onPress={() => setMonths(m)}
+                className={`p-2 rounded border my-1 ${
+                  months === m ? "bg-green-600 border-green-600" : "bg-white"
+                }`}
               >
-                <Text>Cancel</Text>
+                <Text className={months === m ? "text-white" : ""}>{m} mo</Text>
+              </TouchableOpacity>
+            ))}
+            <View className="flex-row justify-between mt-3">
+              <TouchableOpacity
+                className="bg-gray-300 p-2 rounded w-1/2 mr-1"
+                onPress={() => setExtendModal(false)}
+              >
+                <Text className="text-center">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="px-4 py-2 bg-green-600 rounded"
-                onPress={handleExtend}
+                className="bg-green-600 p-2 rounded w-1/2 ml-1"
+                onPress={onExtend}
               >
-                <Text className="text-white font-medium">Extend</Text>
+                <Text className="text-white text-center">Extend</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       )}
-
-      {/* Modal */}
-      <MonthlyPassModal
-        isModalVisible={isModalVisible}
-        setModalVisible={setModalVisible}
-        onPassCreated={handlePassCreated}
-      />
     </View>
   );
 };
