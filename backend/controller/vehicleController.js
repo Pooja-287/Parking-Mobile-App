@@ -1,10 +1,11 @@
 import VehicleCheckin from "../model/checkin.js";
 import Price from "../model/price.js";
+import uploadQR from "../utils/ImageLinker.js";
 import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
 import Staff from "../model/staff.js";
 import mongoose from "mongoose";
-import moment from "moment";
+import { sendWhatsAppTemplate } from "../utils/sendWhatsAppTemplate.js";
 
 
 
@@ -18,7 +19,6 @@ const convertToISTString = (date) => {
     timeZone: "Asia/Kolkata",
   });
 };
-
 
 const Checkin = async (req, res) => {
   try {
@@ -255,7 +255,6 @@ const Checkout = async (req, res) => {
 
 
 
-
 const getCheckins = async (req, res) => {
   try {
     const userId = req.query.staffId || req.user._id; // ✅ Use staffId if passed
@@ -270,20 +269,24 @@ const getCheckins = async (req, res) => {
       query.vehicleType = vehicle;
     }
 
-    const checkins = await VehicleCheckin.find(query).sort({ entryDateTime: -1 });
+    const checkins = await VehicleCheckin.find(query).sort({
+      entryDateTime: -1,
+    });
 
     res.status(200).json({
       count: checkins.length,
       vehicle: checkins,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
 const getCheckouts = async (req, res) => {
   try {
-  const userId = req.query.staffId || req.user._id;
+    const userId = req.query.staffId || req.user._id;
 
     const { vehicle } = req.query; // ✅ FIXED
 
@@ -306,11 +309,11 @@ const getCheckouts = async (req, res) => {
     });
   } catch (error) {
     console.error("getCheckouts error:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
-
-
 
 const getVehicleList = async (req, res) => {
   try {
@@ -417,11 +420,10 @@ const getTodayVehicle = async (req, res) => {
   }
 };
 
-
 const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-  const userId = req.query.staffId || req.user._id;
+    const userId = req.query.staffId || req.user._id;
 
     const userRole = req.user.role;
 

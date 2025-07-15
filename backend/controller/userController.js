@@ -2,123 +2,13 @@
 import Admin from "../model/admin.js";
 import Price from "../model/price.js";
 import Staff from "../model/staff.js";
+import checkin from "../model/checkin.js";
+import monthlyPass from "../model/monthlyPass.js";
 
 import bcrypt from "bcryptjs";
 // import Price from '../model/price'
 import jwt from "jsonwebtoken";
 const SECRET_KEY = "your_secret_key";
-
-
-
-//  const addPrice = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const adminId = user.role === "admin" ? user._id : user.adminId;
-
-//     const { dailyPrices, monthlyPrices } = req.body;
-
-//     if (!dailyPrices && !monthlyPrices) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "At least one of dailyPrices or monthlyPrices is required.",
-//       });
-//     }
-
-//     const existing = await Price.findOne({ adminId });
-
-//     if (existing) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Prices already exist. You can update them instead.",
-//       });
-//     }
-
-//     const newPrice = new Price({
-//       adminId,
-//       dailyPrices: dailyPrices || {},     // optional
-//       monthlyPrices: monthlyPrices || {}, // optional
-//     });
-
-//     await newPrice.save();
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Prices added successfully",
-//       price: newPrice,
-//     });
-//   } catch (error) {
-//     console.error("Add Price Error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
-// const updatePrice = async (req, res) => {
-//   try {
-//     const adminId = req.user?._id;
-//     const { vehicle } = req.body;
-
-//     if (!vehicle || typeof vehicle !== "object") {
-//       return res.status(400).json({ message: "Vehicle prices are required" });
-//     }
-
-//     const updatedPrice = await Price.findOneAndUpdate(
-//       { adminId },
-//       { $set: { vehicle } },
-//       { new: true }
-//     );
-
-//     if (!updatedPrice) {
-//       return res.status(404).json({ message: "Price not found" });
-//     }
-
-//     res.status(200).json({
-//       message: "Price updated successfully",
-//       price: updatedPrice,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-
-// const getPrice = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const adminId = user.role === "admin" ? user._id : user.adminId;
-
-//     if (!adminId) {
-//       return res.status(400).json({ message: "Admin ID is required" });
-//     }
-
-//     const priceDoc = await Price.findOne({ adminId });
-
-//     if (!priceDoc) {
-//       return res.status(404).json({ message: "Price not found for the admin" });
-//     }
-
-//     res.status(200).json(priceDoc);
-//   } catch (error) {
-//     console.error("❌ Error in getPrice:", error.message);
-//     res.status(500).json({ message: "Internal Server Error", error: error.message });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 const addDailyPrices = async (req, res) => {
@@ -290,14 +180,14 @@ const registerAdmin = async (req, res) => {
   }
 };
 
-
-
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Username and password are required" });
     }
 
     let user = await Admin.findOne({ username });
@@ -309,7 +199,9 @@ const loginUser = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid username or password (user not found)" });
+      return res
+        .status(401)
+        .json({ message: "Invalid username or password (user not found)" });
     }
 
     // ✅ Compare with correct hashed field
@@ -317,7 +209,9 @@ const loginUser = async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(password, hashed);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid username or password (wrong password)" });
+      return res
+        .status(401)
+        .json({ message: "Invalid username or password (wrong password)" });
     }
 
     const token = jwt.sign(
@@ -336,16 +230,16 @@ const loginUser = async (req, res) => {
         email: user.email || null,
         profileImage: user.profileImage || null,
         // Permissions: user.Permissions || []
-         permissions: user.permissions, // ✅ Must be added
+        permissions: user.permissions, // ✅ Must be added
       },
-
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
-
 
 const viewProfile = async (req, res) => {
   try {
@@ -443,7 +337,120 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
+const getDashboardData = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
+    const admin = await Admin.findById(userId);
+    if (!admin) {
+      return res
+        .status(404)
+        .json({ message: "Admin not found or staff not allowed" });
+    }
+
+    const { date } = req.query; // Expect date in YYYY-MM-DD format
+    const startOfDay = date ? new Date(date) : new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Fetch staff
+    const staffs = await Staff.find({ adminId: userId });
+
+    // Fetch monthly passes created by admin or their staff
+    const staffIds = staffs.map((staff) => staff._id);
+    const monthlyPasses = await monthlyPass.find({
+      createdBy: { $in: [userId, ...staffIds] },
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    // Fetch check-ins and check-outs
+    const checkIns = await Checkin.find({
+      adminId: userId,
+      entryDateTime: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    const checkOuts = await Checkout.find({
+      adminId: userId,
+      exitDateTime: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    // Calculate income for the selected date
+    const todayIncome =
+      checkIns.reduce((sum, checkin) => sum + (checkin.amount || 0), 0) +
+      monthlyPasses.reduce((sum, pass) => sum + (pass.amount || 0), 0);
+
+    // Calculate yesterday's income
+    const yesterdayStart = new Date(startOfDay);
+    yesterdayStart.setDate(startOfDay.getDate() - 1);
+    const yesterdayEnd = new Date(yesterdayStart);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+    const yesterdayCheckIns = await Checkin.find({
+      adminId: userId,
+      entryDateTime: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    });
+    const yesterdayMonthlyPasses = await MonthlyPass.find({
+      createdBy: { $in: [userId, ...staffIds] },
+      createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    });
+    const yesterdayIncome =
+      yesterdayCheckIns.reduce(
+        (sum, checkin) => sum + (checkin.amount || 0),
+        0
+      ) +
+      yesterdayMonthlyPasses.reduce((sum, pass) => sum + (pass.amount || 0), 0);
+
+    // Calculate monthly income (for the month of the selected date)
+    const startOfMonth = new Date(
+      startOfDay.getFullYear(),
+      startOfDay.getMonth(),
+      1
+    );
+    const endOfMonth = new Date(
+      startOfDay.getFullYear(),
+      startOfDay.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+    const monthlyCheckIns = await Checkin.find({
+      adminId: userId,
+      entryDateTime: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+    const monthlyPasss = await monthlyPass.find({
+      createdBy: { $in: [userId, ...staffIds] },
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+    const monthlyIncome =
+      monthlyCheckIns.reduce((sum, checkin) => sum + (checkin.amount || 0), 0) +
+      monthlyPasss.reduce((sum, pass) => sum + (pass.amount || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        userId,
+        staffs,
+        monthlyPasses,
+        checkIns,
+        checkOuts,
+        todayIncome,
+        yesterdayIncome,
+        monthlyIncome,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching dashboard data",
+      error: error.message,
+    });
+  }
+};
 
 export default {
   // addPrice,
@@ -462,5 +469,5 @@ export default {
   updateAdmin,
   deleteAdmin,
   viewProfile,
-  
+  getDashboardData,
 };

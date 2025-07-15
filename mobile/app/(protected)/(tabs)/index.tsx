@@ -31,7 +31,7 @@ const Index = () => {
         translucent
         barStyle="dark-content"
       />
-      <View className="bg-green-100 py-4 flex-1 px-4">
+      <View className="bg-[#F3F4F6] py-4 flex-1 px-4">
         <View className="">
           <View className="border border-white shadow-md  rounded-sm bg-white p-2">
             <Text className="text-2xl mb-5 text-[#111827]">

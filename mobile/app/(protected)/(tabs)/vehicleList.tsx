@@ -52,7 +52,7 @@ const CheckinCard = ({ item }: any) => {
           <TouchableOpacity
             onPress={() => {
               Clipboard.setStringAsync(item.tokenId);
-              Alert.alert("Copied!", `${item.tokenId} copied to clipboard.`);
+              Alert.alert("Copied!", ` ${item.tokenId} copied to clipboard.`);
             }}
           >
             <Text className="text-xs text-green-500">

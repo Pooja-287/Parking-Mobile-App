@@ -1,47 +1,65 @@
-// import axios from "axios";
+import axios from "axios";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-// export const sendCheckInQR = async (Image, token, mobile) => {
-//   try {
-//     const response = await axios({
-//       url: `${process.env.WHATSAPP_URL}`,
-//       method: "post",
-//       headers: {
-//         Authorization: `Bearer ${process.env.WHATSAPP_API}`,
-//         "Content-Type": "application/json",
-//       },
-//       data: JSON.stringify({
-//         messaging_product: "whatsapp",
-//         to: `+91${mobile}`,
-//         type: "image",
-//         image: {
-//           link: Image,
-//           caption: token,
-//         },
-//       }),
-//     });
-//     console.log(response.data);
-//   } catch (err) {
-//     console.error("WhatsApp message error:", err.response?.data || err.message);
-//   }
-// };
-const accountSid = process.env.T_SID;
-const authToken = process.env.T_AUTH;
-import twilio from "twilio";
-
-const client = twilio(accountSid, authToken);
-
-export const sendCheckInQR = async (image, /* token, */ mobile) => {
-  try {
-    client.messages
-      .create({
-        from: "whatsapp:+14155238886",
-        mediaUrl: [image],
-        to: `whatsapp:+91${mobile}`,
-      })
-      .then((message) => console.log(message.sid));
-  } catch (error) {
-    console.log(error);
-  }
+// Headers
+const headers = {
+  Authorization: `Bearer ${process.env.WHATSAPP_API}`,
+  "Content-Type": "application/json",
 };
+
+export async function sendWhatsAppTemplate(recipientNumber, imageUrl, tokenId) {
+  try {
+    const payload = {
+      messaging_product: "whatsapp",
+      to: +recipientNumber,
+      type: "template",
+      template: {
+        name: "purchase_receipt_3",
+        language: {
+          code: "en_US",
+        },
+        components: [
+          {
+            type: "header",
+            parameters: [
+              {
+                type: "image",
+                image: {
+                  link: imageUrl,
+                },
+              },
+            ],
+          },
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: tokenId,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const response = await axios.post(process.env.WHATSAPP_URL, payload, {
+      headers,
+    });
+
+    if (response.status === 200) {
+      console.log("Template message sent successfully:", response.data);
+      return response.data;
+    } else {
+      throw new Error(`Failed to send template message: ${response.status}`);
+    }
+  } catch (error) {
+    console.error(
+      "Error sending template:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+}
